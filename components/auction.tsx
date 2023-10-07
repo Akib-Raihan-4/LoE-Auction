@@ -1,4 +1,4 @@
-"use client"
+'use client'
 import React, { useState, useEffect } from 'react';
 import supabase from '@/config/supabase';
 
@@ -10,13 +10,15 @@ export const Auction = () => {
   const [bidAmount, setBidAmount] = useState('');
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [teamData, setTeamData] = useState([]);
-
+  const [changes, setChanges] = useState();
+  
   useEffect(() => {
     const fetchPlayerData = async () => {
       const { data: playersData, error: playersError } = await supabase
         .from('formPlayer')
         .select('*')
-        .eq('verified', true);
+        .eq('verified', true)
+        .eq('selected', false);
       
       if (playersError) {
         console.error(playersError);
@@ -26,7 +28,7 @@ export const Auction = () => {
     };
 
     fetchPlayerData();
-  }, []);
+  }, [changes]);
 
   useEffect(() => {
     const fetchTeamData = async () => {
@@ -42,7 +44,7 @@ export const Auction = () => {
     };
 
     fetchTeamData();
-  });
+  }, []);
 
   useEffect(() => {
     // Apply filters based on selectedPosition and selectedRating to playerData
@@ -55,6 +57,9 @@ export const Auction = () => {
     if (selectedRating) {
       filteredData = filteredData.filter((player) => player.rating === selectedRating);
     }
+
+    // Filter out players with selected === true
+  
 
     if (filteredData.length > 0) {
       const randomIndex = Math.floor(Math.random() * filteredData.length);
@@ -70,6 +75,7 @@ export const Auction = () => {
     if (selectedPlayer) {
       // Prompt the user to input the bid amount
       const inputAmount = prompt(`Enter the bid amount for ${selectedPlayer.id}`);
+      
 
       if (inputAmount !== null) {
         // Convert bidAmount to a number
@@ -120,6 +126,7 @@ export const Auction = () => {
             }
 
             setShowBidForm(false);
+            setChanges(Date.now()); // Trigger a re-fetch of playerData
           } catch (error) {
             console.error('Supabase error:', error);
           }
@@ -189,8 +196,6 @@ export const Auction = () => {
             <p>Rating: {selectedPlayer.rating}</p>
           </div>
         )}
-
-        
       </div>
     </div>
   );
