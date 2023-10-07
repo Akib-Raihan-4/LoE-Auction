@@ -3,14 +3,14 @@ import React, { useState, useEffect } from 'react';
 import supabase from '@/config/supabase';
 
 export const Auction = () => {
-  const [playerData, setPlayerData] = useState([]);
+  const [playerData, setPlayerData] = useState<any>([]);
   const [selectedPosition, setSelectedPosition] = useState('');
   const [selectedRating, setSelectedRating] = useState('');
   const [showBidForm, setShowBidForm] = useState(false);
   const [bidAmount, setBidAmount] = useState('');
-  const [selectedPlayer, setSelectedPlayer] = useState(null);
-  const [teamData, setTeamData] = useState([]);
-  const [changes, setChanges] = useState();
+  const [selectedPlayer, setSelectedPlayer] = useState<any>(null);
+  const [teamData, setTeamData] = useState<any>([]);
+  const [changes, setChanges] = useState<any>();
   
   useEffect(() => {
     const fetchPlayerData = async () => {
@@ -51,11 +51,11 @@ export const Auction = () => {
     let filteredData = playerData;
 
     if (selectedPosition) {
-      filteredData = filteredData.filter((player) => player.position === selectedPosition);
+      filteredData = filteredData.filter((player:any) => player.position === selectedPosition);
     }
 
     if (selectedRating) {
-      filteredData = filteredData.filter((player) => player.rating === selectedRating);
+      filteredData = filteredData.filter((player:any) => player.rating === selectedRating);
     }
 
     // Filter out players with selected === true
@@ -69,18 +69,17 @@ export const Auction = () => {
     }
   }, [selectedPosition, selectedRating, playerData]);
 
-  const handleTeamClick = async (teamId) => {
+  const handleTeamClick = async (teamId:any) => {
     setShowBidForm(true);
-
+  
     if (selectedPlayer) {
       // Prompt the user to input the bid amount
       const inputAmount = prompt(`Enter the bid amount for ${selectedPlayer.id}`);
       
-
       if (inputAmount !== null) {
         // Convert bidAmount to a number
         const bidAmountNumber = parseFloat(inputAmount);
-
+  
         if (!isNaN(bidAmountNumber)) {
           try {
             // Fetch the current team amount from the database
@@ -94,7 +93,7 @@ export const Auction = () => {
               console.error(teamError);
               return; // Handle the error
             }
-
+  
             // Update the teamAmount in the Team table
             const updatedAmount = team.teamAmount - bidAmountNumber;
             const { error: updateError } = await supabase
@@ -106,7 +105,7 @@ export const Auction = () => {
               console.error(updateError);
               return; // Handle the error
             }
-
+  
             // Update the local state with the updated team amount
             const updatedTeamData = [...teamData];
             const teamIndex = updatedTeamData.findIndex((team) => team.id === teamId);
@@ -114,19 +113,34 @@ export const Auction = () => {
               updatedTeamData[teamIndex].teamAmount = updatedAmount;
               setTeamData(updatedTeamData);
             }
-
+  
             // Update the selected status of the player in the formPlayer table
             const { data: playerData, error: playerError } = await supabase
               .from('formPlayer')
               .update({ selected: true })
-              .eq('id', selectedPlayer.id)
-
+              .eq('id', selectedPlayer.id);
+  
             if (playerError) {
               console.error(playerError);
+              return; // Handle the error
             }
-
+  
+            // Insert a new record into the TeamPlayer table
+            const { error: teamPlayerError } = await supabase
+              .from('TeamPlayer')
+              .upsert([
+                {
+                  teamID: teamId,
+                  playerID: selectedPlayer.id,
+                },
+              ]);
+  
+            if (teamPlayerError) {
+              console.error(teamPlayerError);
+              return; // Handle the error
+            }
+            setChanges(Date.now()); 
             setShowBidForm(false);
-            setChanges(Date.now()); // Trigger a re-fetch of playerData
           } catch (error) {
             console.error('Supabase error:', error);
           }
@@ -134,12 +148,13 @@ export const Auction = () => {
       }
     }
   };
+  
 
-  const handlePositionChange = (event) => {
+  const handlePositionChange = (event:any) => {
     setSelectedPosition(event.target.value);
   };
 
-  const handleRatingChange = (event) => {
+  const handleRatingChange = (event:any) => {
     setSelectedRating(event.target.value);
   };
 
@@ -148,7 +163,7 @@ export const Auction = () => {
       <div className=''>
         <h2>Select a Team</h2>
         <ul>
-          {teamData.map((team) => (
+          {teamData.map((team:any) => (
             <li key={team.id}>
               <button onClick={() => handleTeamClick(team.id)}>
                 {team.teamName}-{team.teamAmount}
