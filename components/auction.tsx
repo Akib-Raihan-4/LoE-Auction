@@ -3,46 +3,46 @@ import React, { useState, useEffect } from 'react';
 import supabase from '@/config/supabase';
 
 export const Auction = () => {
-  const [teamData, setTeamData] = useState([]);
   const [playerData, setPlayerData] = useState([]);
   const [selectedPosition, setSelectedPosition] = useState('');
   const [selectedRating, setSelectedRating] = useState('');
-  const [filteredPlayers, setFilteredPlayers] = useState([]);
-  const [randomPlayer, setRandomPlayer] = useState(null);
-  const [selectedTeam, setSelectedTeam] = useState(null);
-  const [bidAmount, setBidAmount] = useState('');
   const [showBidForm, setShowBidForm] = useState(false);
+  const [bidAmount, setBidAmount] = useState('');
   const [selectedPlayer, setSelectedPlayer] = useState(null);
+  const [teamData, setTeamData] = useState([]);
 
   useEffect(() => {
-    const fetchTeamData = async () => {
-      const { data, error } = await supabase
-        .from('Team')
-        .select('*');
-      
-      if (error) {
-        console.error(error);
-      } else {
-        setTeamData(data || []);
-      }
-    };
-
     const fetchPlayerData = async () => {
-      const { data, error } = await supabase
+      const { data: playersData, error: playersError } = await supabase
         .from('formPlayer')
         .select('*')
         .eq('verified', true);
       
-      if (error) {
-        console.error(error);
+      if (playersError) {
+        console.error(playersError);
       } else {
-        setPlayerData(data || []);
+        setPlayerData(playersData || []);
+      }
+    };
+
+    fetchPlayerData();
+  }, []);
+
+  useEffect(() => {
+    const fetchTeamData = async () => {
+      const { data: teamsData, error: teamsError } = await supabase
+        .from('Team')
+        .select('*');
+      
+      if (teamsError) {
+        console.error(teamsError);
+      } else {
+        setTeamData(teamsData || []);
       }
     };
 
     fetchTeamData();
-    fetchPlayerData();
-  }, []);
+  });
 
   useEffect(() => {
     // Apply filters based on selectedPosition and selectedRating to playerData
@@ -56,79 +56,75 @@ export const Auction = () => {
       filteredData = filteredData.filter((player) => player.rating === selectedRating);
     }
 
-    setFilteredPlayers(filteredData);
-
     if (filteredData.length > 0) {
       const randomIndex = Math.floor(Math.random() * filteredData.length);
-      setRandomPlayer(filteredData[randomIndex]);
+      setSelectedPlayer(filteredData[randomIndex]);
     } else {
-      setRandomPlayer(null);
+      setSelectedPlayer(null);
     }
   }, [selectedPosition, selectedRating, playerData]);
 
-  const handleTeamClick = (teamId) => {
-    setSelectedTeam(teamId);
+  const handleTeamClick = async (teamId) => {
     setShowBidForm(true);
-  };
 
-  const handleSubmitBid = async () => {
-    // if (!selectedPlayer || !selectedTeam || !bidAmount) {
-    //   // Handle validation or show an error message
-    //   return;
-    // }
+    if (selectedPlayer) {
+      // Prompt the user to input the bid amount
+      const inputAmount = prompt(`Enter the bid amount for ${selectedPlayer.id}`);
 
-    // Convert bidAmount to a number
-    const bidAmountNumber = parseFloat(bidAmount);
-    console.log(selectedTeam)
+      if (inputAmount !== null) {
+        // Convert bidAmount to a number
+        const bidAmountNumber = parseFloat(inputAmount);
 
-    if (isNaN(bidAmountNumber)) {
-      // Handle invalid bid amount (not a number)
-      return;
-    }
+        if (!isNaN(bidAmountNumber)) {
+          try {
+            // Fetch the current team amount from the database
+            const { data: team, error: teamError } = await supabase
+              .from('Team')
+              .select('teamAmount')
+              .eq('id', teamId)
+              .single();
+            
+            if (teamError) {
+              console.error(teamError);
+              return; // Handle the error
+            }
 
-    try {
-      // Update the teamAmount in the Team table
-      const updatedTeamData = [...teamData]; // Create a copy of teamData
-      const teamIndex = updatedTeamData.findIndex((team) => team.id === selectedTeam);
-      
-      if (teamIndex !== -1) {
-        // Update the teamAmount for the selected team
-        updatedTeamData[teamIndex].teamAmount -= bidAmountNumber;
+            // Update the teamAmount in the Team table
+            const updatedAmount = team.teamAmount - bidAmountNumber;
+            const { error: updateError } = await supabase
+              .from('Team')
+              .update({ teamAmount: updatedAmount })
+              .eq('id', teamId);
+            
+            if (updateError) {
+              console.error(updateError);
+              return; // Handle the error
+            }
 
-        // Update the teamAmount in the database
-        const { error: updateError } = await supabase
-          .from('Team')
-          .update({ teamAmount: updatedTeamData[teamIndex].teamAmount })
-          .eq('id', selectedTeam);
-        
-        if (updateError) {
-          console.error(updateError);
-          return; // Handle the error
+            // Update the local state with the updated team amount
+            const updatedTeamData = [...teamData];
+            const teamIndex = updatedTeamData.findIndex((team) => team.id === teamId);
+            if (teamIndex !== -1) {
+              updatedTeamData[teamIndex].teamAmount = updatedAmount;
+              setTeamData(updatedTeamData);
+            }
+
+            // Update the selected status of the player in the formPlayer table
+            const { data: playerData, error: playerError } = await supabase
+              .from('formPlayer')
+              .update({ selected: true })
+              .eq('id', selectedPlayer.id)
+
+            if (playerError) {
+              console.error(playerError);
+            }
+
+            setShowBidForm(false);
+          } catch (error) {
+            console.error('Supabase error:', error);
+          }
         }
-
-        setTeamData(updatedTeamData); // Update the local state
       }
-
-      // Update the selected status of the player in the formPlayer table
-      const { data, error } = await supabase
-        .from('formPlayer')
-        .update({ selected: true })
-        .eq('playerId', selectedPlayer.id)
-        .single();
-
-      if (error) {
-        console.error(error);
-      } else {
-        // Set the selectedPlayer's selected status to true in the local state
-        setSelectedPlayer({ ...selectedPlayer, selected: true });
-      }
-
-      // Simulate a successful bid
-      setShowBidForm(false);
-      setBidAmount('');
-      setSelectedTeam(null);
-    } catch (error) {
-      console.error('Supabase error:', error);
     }
   };
 
@@ -148,7 +144,7 @@ export const Auction = () => {
           {teamData.map((team) => (
             <li key={team.id}>
               <button onClick={() => handleTeamClick(team.id)}>
-                {team.teamName}
+                {team.teamName}-{team.teamAmount}
               </button>
             </li>
           ))}
@@ -156,14 +152,14 @@ export const Auction = () => {
 
         {showBidForm && (
           <div className='bid-form'>
-            <h2>Place a Bid for Player {randomPlayer && randomPlayer.name}</h2>
+            <h2>Place a Bid for Player {selectedPlayer && selectedPlayer.name}</h2>
             <input
               type='number'
               placeholder='Bid Amount'
               value={bidAmount}
               onChange={(e) => setBidAmount(e.target.value)}
             />
-            <button onClick={handleSubmitBid}>Submit Bid</button>
+            <button onClick={handleTeamClick}>Submit Bid</button>
           </div>
         )}
       </div>
@@ -185,12 +181,12 @@ export const Auction = () => {
           <option value="C">C</option>
         </select>
 
-        {randomPlayer && (
+        {selectedPlayer && (
           <div className='mb-10'>
             <h2>Randomly Selected Player:</h2>
-            <p>Name: {randomPlayer.name}</p>
-            <p>Position: {randomPlayer.position}</p>
-            <p>Rating: {randomPlayer.rating}</p>
+            <p>Name: {selectedPlayer.name}</p>
+            <p>Position: {selectedPlayer.position}</p>
+            <p>Rating: {selectedPlayer.rating}</p>
           </div>
         )}
 
