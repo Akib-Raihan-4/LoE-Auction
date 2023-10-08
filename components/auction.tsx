@@ -8,6 +8,7 @@ export const Auction = () => {
   const [selectedRating, setSelectedRating] = useState<any>('');
   const [showBidModal, setShowBidModal] = useState<any>(false);
   const [showSuccessModal, setShowSuccessModal] = useState<any>(false);
+  const [showUnsuccessModal, setShowUnsuccessModal] = useState<any>(false);
   const [bidAmount, setBidAmount] = useState('');
   const [selectedPlayer, setSelectedPlayer] = useState<any>(null);
   const [teamData, setTeamData] = useState<any>([]);
@@ -83,8 +84,16 @@ export const Auction = () => {
           console.error(teamError);
           return;
         }
+        const currentAmount = team.teamAmount;
+        if (currentAmount - bidAmount < 0) {
+            console.error('Team does not have enough funds for this bid.');
+            setShowBidModal(false)
+            setShowUnsuccessModal(true)
+            return;
+        }
+    
 
-        const updatedAmount = team.teamAmount - bidAmount;
+        const updatedAmount = Math.max(currentAmount - bidAmount, 0);
         const { error: updateError } = await supabase
           .from('Team')
           .update({ teamAmount: updatedAmount })
@@ -118,6 +127,7 @@ export const Auction = () => {
             {
               teamID: selectedTeamId,
               playerID: selectedPlayer.id,
+              playerPrice: bidAmount,
             },
           ])
 
@@ -125,7 +135,6 @@ export const Auction = () => {
           console.error(teamPlayerError)
           return;
         }
-         
         setBidAmount("")
         setShowBidModal(false)
         setShowSuccessModal(true)
@@ -250,6 +259,26 @@ export const Auction = () => {
                     <button
                     className='px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600'
                     onClick={handleClose}
+                    >
+                    Close
+                    </button>
+                </div>
+                </div>
+            </div>
+        )}
+        {showUnsuccessModal && (
+            <div className='fixed inset-0 flex items-center justify-center z-50'>
+                <div className='modal-overlay absolute inset-0 bg-black opacity-50'></div>
+            
+                <div className='modal-container bg-white w-96 mx-auto rounded shadow-lg z-50'>
+                <div className='modal-content p-4'>
+                    <h2 className='text-xl font-bold mb-2'>Successful Bid</h2>
+                    <p className='mb-4 text-red-600'>
+                    Sorry <span className='font-bold'>{selectedTeam && selectedTeam.teamName}</span> does not have enough coins for buying <span className='font-bold'>{selectedPlayer && selectedPlayer.name}</span>.
+                    </p>
+                    <button
+                    className='px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600'
+                    onClick={()=>setShowUnsuccessModal(false)}
                     >
                     Close
                     </button>
