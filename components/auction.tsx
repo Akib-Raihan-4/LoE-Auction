@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import supabase from '@/config/supabase';
 import {BsCoin} from 'react-icons/bs'
+import  {PlayerCard}  from '@/components/playerCard'
 
 export const Auction = () => {
   const [playerData, setPlayerData] = useState<any>([]);
@@ -163,24 +164,9 @@ export const Auction = () => {
     <div className='w-[1440px] flex mx-auto'>
         <div className='w-[80%] h-screen flex flex-col justify-center items-center'>
             {selectedPlayer && (
-                <div className='w-[40%]'>
-                    <div className='bg-gray-400 shadow-[15px_10px_40px_10px_rgba(0,0,0,0.5)] mx-auto px-10 my-auto '>
-                        <div className="py-4 my-2">
-                            <img
-                                className="object-center object-cover rounded-full h-40 w-40 mx-auto "
-                                src={selectedPlayer.image}
-                                alt="photo"
-                            />
-                        </div>
-                        <div className="text-center">
-                            <p className="text-xl text-gray-800 font-bold mb-2">{selectedPlayer.name}</p>
-                            <p className="text-lg text-gray-700 font-bold">{selectedPlayer.id}</p>
-                            <p className="text-md text-gray-600 font-semibold">{selectedPlayer.position}</p>
-                            <p className="text-md text-gray-600 font-semibold">{selectedPlayer.department}</p>
-                            <p className="text-md text-gray-600 font-semibold">Rating: {selectedPlayer.rating}</p>
-                        </div>
-                    </div>
-                </div>
+                <>
+                  <PlayerCard name={selectedPlayer.name} url={selectedPlayer.image} position={selectedPlayer.position} rating={selectedPlayer.rating} department={selectedPlayer.department}/>
+                </>
             )}
             <select value={selectedGender} onChange={(e) => setSelectedGender(e.target.value)} className='mt-6 w-[40%] bg-slate-200 shadow-xl'>
                 <option value="">All Genders</option>
