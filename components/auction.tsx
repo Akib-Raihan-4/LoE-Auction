@@ -1,16 +1,19 @@
-'use client'
+'use client';
 import React, { useState, useEffect } from 'react';
 import supabase from '@/config/supabase';
 
 export const Auction = () => {
   const [playerData, setPlayerData] = useState<any>([]);
-  const [selectedRating, setSelectedRating] = useState('');
-  const [showBidForm, setShowBidForm] = useState(false);
+  const [selectedRating, setSelectedRating] = useState<any>('');
+  const [showBidModal, setShowBidModal] = useState<any>(false);
+  const [showSuccessModal, setShowSuccessModal] = useState<any>(false);
   const [bidAmount, setBidAmount] = useState('');
   const [selectedPlayer, setSelectedPlayer] = useState<any>(null);
   const [teamData, setTeamData] = useState<any>([]);
-  const [changes, setChanges] = useState<any>();
-  
+  const [changes, setChanges] = useState<any>(null);
+  const [selectedTeamId, setSelectedTeamId] = useState<any>(null)
+  const [selectedTeam, setSelectedTeam] = useState<any>(null);
+
   useEffect(() => {
     const fetchPlayerData = async () => {
       const { data: playersData, error: playersError } = await supabase
@@ -18,7 +21,7 @@ export const Auction = () => {
         .select('*')
         .eq('verified', true)
         .eq('selected', false);
-      
+
       if (playersError) {
         console.error(playersError);
       } else {
@@ -34,7 +37,7 @@ export const Auction = () => {
       const { data: teamsData, error: teamsError } = await supabase
         .from('Team')
         .select('*');
-      
+
       if (teamsError) {
         console.error(teamsError);
       } else {
@@ -43,17 +46,14 @@ export const Auction = () => {
     };
 
     fetchTeamData();
-  }, []);
+  },[]);
 
   useEffect(() => {
-    
     let filteredData = playerData;
-
 
     if (selectedRating) {
       filteredData = filteredData.filter((player:any) => player.rating === selectedRating);
     }
-
 
     if (filteredData.length > 0) {
       const randomIndex = Math.floor(Math.random() * filteredData.length);
@@ -63,89 +63,81 @@ export const Auction = () => {
     }
   }, [selectedRating, playerData]);
 
-  const handleTeamClick = async (teamId:any) => {
-    setShowBidForm(true);
-  
+  const handleBidSubmission = async (bidAmount:any) => {
     if (selectedPlayer) {
-      
-      const inputAmount = prompt(`Enter the bid amount for ${selectedPlayer.id}`);
-      
-      if (inputAmount !== null) {
-        
-        const bidAmountNumber = parseFloat(inputAmount);
-  
-        if (!isNaN(bidAmountNumber)) {
-          try {
-           
-            const { data: team, error: teamError } = await supabase
-              .from('Team')
-              .select('teamAmount')
-              .eq('id', teamId)
-              .single();
-            
-            if (teamError) {
-              console.error(teamError);
-              return; 
-            }
-  
-        
-            const updatedAmount = team.teamAmount - bidAmountNumber;
-            const { error: updateError } = await supabase
-              .from('Team')
-              .update({ teamAmount: updatedAmount })
-              .eq('id', teamId);
-            
-            if (updateError) {
-              console.error(updateError);
-              return; 
-            }
-  
-           
-            const updatedTeamData = [...teamData];
-            const teamIndex = updatedTeamData.findIndex((team) => team.id === teamId);
-            if (teamIndex !== -1) {
-              updatedTeamData[teamIndex].teamAmount = updatedAmount;
-              setTeamData(updatedTeamData);
-            }
-  
-            
-            const { data: playerData, error: playerError } = await supabase
-              .from('formPlayer')
-              .update({ selected: true })
-              .eq('id', selectedPlayer.id);
-  
-            if (playerError) {
-              console.error(playerError);
-              return; 
-            }
-  
-            const { error: teamPlayerError } = await supabase
-              .from('TeamPlayer')
-              .upsert([
-                {
-                  teamID: teamId,
-                  playerID: selectedPlayer.id,
-                },
-              ]);
-  
-            if (teamPlayerError) {
-              console.error(teamPlayerError);
-              return; 
-            }
-            setChanges(Date.now()); 
-            setShowBidForm(false);
-          } catch (error) {
-            console.error('Supabase error:', error);
-          }
+      try {
+        const { data: team, error: teamError } = await supabase
+          .from('Team')
+          .select('teamAmount')
+          .eq('id', selectedTeamId)
+          .single();
+
+        if (teamError) {
+          console.error(teamError);
+          return;
         }
+
+        const updatedAmount = team.teamAmount - bidAmount;
+        const { error: updateError } = await supabase
+          .from('Team')
+          .update({ teamAmount: updatedAmount })
+          .eq('id', selectedTeamId);
+
+        if (updateError) {
+          console.error(updateError);
+          return;
+        }
+
+        const updatedTeamData = [...teamData];
+        const teamIndex = updatedTeamData.findIndex((team) => team.id === selectedTeamId);
+        if (teamIndex !== -1) {
+          updatedTeamData[teamIndex].teamAmount = updatedAmount;
+          setTeamData(updatedTeamData);
+        }
+
+        const { data: playerData, error: playerError } = await supabase
+          .from('formPlayer')
+          .update({ selected: true })
+          .eq('id', selectedPlayer.id);
+
+        if (playerError) {
+          console.error(playerError);
+          return;
+        }
+
+        const { error: teamPlayerError } = await supabase
+          .from('TeamPlayer')
+          .upsert([
+            {
+              teamID: selectedTeamId,
+              playerID: selectedPlayer.id,
+            },
+          ]);
+
+        if (teamPlayerError) {
+          console.error(teamPlayerError);
+          return;
+        }
+        setChanges(Date.now()); 
+        setBidAmount("")
+        setShowBidModal(false);
+        setShowSuccessModal(true);
+      } catch (error) {
+        console.error('Supabase error:', error);
       }
     }
   };
-  
+
+  const handleTeamClick = async (teamId:any) => {
+    setSelectedTeamId(teamId);
+    setShowBidModal(true);
+    const team = teamData.find((team:any) => team.id === teamId);
+    setSelectedTeam(team);
+  };
+
   const handleRatingChange = (event:any) => {
     setSelectedRating(event.target.value);
   };
-
   return (
     <div className='w-[1440px] flex mx-auto'>
       
@@ -195,16 +187,57 @@ export const Auction = () => {
                 ))}
             </ul>
 
-            {showBidForm && (
-                <div className='bid-form'>
-                <h2>Place a Bid for Player {selectedPlayer && selectedPlayer.name}</h2>
-                <input
-                    type='number'
-                    placeholder='Bid Amount'
-                    value={bidAmount}
-                    onChange={(e) => setBidAmount(e.target.value)}
-                />
-                <button onClick={handleTeamClick}>Submit Bid</button>
+            {showBidModal && (
+                <div className='fixed inset-0 flex items-center justify-center z-50'>
+                    <div className='modal-overlay absolute inset-0 bg-black opacity-50'></div>
+                    <div className='modal-container bg-white w-96 mx-auto rounded shadow-lg z-50'>
+                    <div className='modal-content p-4'>
+                        <h2 className='text-xl font-bold mb-4'>Place a Bid for Player {selectedPlayer && selectedPlayer.name}</h2>
+                        <input
+                        type='number'
+                        className='w-full p-2 border rounded mb-4'
+                        placeholder='Bid Amount'
+                        value={bidAmount}
+                        onChange={(e) => setBidAmount(e.target.value)}
+                        />
+                        <div className='flex justify-end'>
+                        <button
+                            className='px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 mr-2'
+                            onClick={() => handleBidSubmission(bidAmount)}
+                        >
+                            Submit Bid
+                        </button>
+                        <button
+                            className='px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400'
+                            onClick={() => setShowBidModal(false)}
+                        >
+                            Cancel
+                        </button>
+                        </div>
+                    </div>
+                    </div>
+                </div>
+              
+            )}
+
+            {showSuccessModal && (
+                <div className='fixed inset-0 flex items-center justify-center z-50'>
+                    <div className='modal-overlay absolute inset-0 bg-black opacity-50'></div>
+                
+                    <div className='modal-container bg-white w-96 mx-auto rounded shadow-lg z-50'>
+                    <div className='modal-content p-4'>
+                        <h2 className='text-xl font-bold mb-2'>Successful Bid</h2>
+                        <p className='mb-4'>
+                        Congratulations <span className='font-bold'>{selectedTeam && selectedTeam.teamName}</span> on buying <span className='font-bold'>{selectedPlayer && selectedPlayer.name}</span>.
+                        </p>
+                        <button
+                        className='px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600'
+                        onClick={() => setShowSuccessModal(false)}
+                        >
+                        Close
+                        </button>
+                    </div>
+                    </div>
                 </div>
             )}
         </div>
