@@ -238,8 +238,8 @@ export const Auction = () => {
   return (
     <div className='max-w-[1440px] w-screen flex sm:mx-auto mx-10'>
         <div className='w-[80%] h-screen flex flex-col mt-40 items-center'>
-            <div className='w-[800px] '>
-              <select value={selectedGender} onChange={(e) => setSelectedGender(e.target.value)} className='mb-6 shadow-xl bg-[#4f6d79] text-white font-bold w-full'>
+            <div className='w-[800px]'>
+              <select value={selectedGender} onChange={(e) => setSelectedGender(e.target.value)} className='mb-6 shadow-xl bg-[#4f6d79] text-white font-bold w-full text-center rounded-[20px]'>
                   <option value="">All Genders</option>
                   <option value="Male">Male</option>
                   <option value="Female">Female</option>
@@ -251,7 +251,7 @@ export const Auction = () => {
                 </>
             )}
             <div className='w-[800px] '>
-              <select value={selectedRating} onChange={handleRatingChange} className='mt-6  shadow-xl bg-[#4f6d79] text-white font-bold w-full'>
+              <select value={selectedRating} onChange={handleRatingChange} className='mt-6  shadow-xl bg-[#4f6d79] text-white font-bold w-full text-center rounded-[20px]'>
                 <option value="">All Rating</option>
                 <option value="Icon">Icon</option>
                 <option value="Other Rating">Other Rating</option>
@@ -270,7 +270,7 @@ export const Auction = () => {
               </tr>
             </thead>
             <tbody>
-              {teamData.map((team:any) => (
+              {teamData.filter((team:any) => selectedGender === '' || team.teamGender === selectedGender).map((team:any) => (
                 <tr key={team.id}>
                   <td className='border border-black px-4 py-2'>
                     <button
