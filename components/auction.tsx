@@ -237,7 +237,7 @@ export const Auction = () => {
   }
   return (
     <div className='max-w-[1440px] w-screen flex sm:mx-auto mx-10'>
-        <div className='w-[80%] h-screen flex flex-col mt-40 items-center'>
+        <div className='w-[70%] h-screen flex flex-col mt-40 items-center'>
             <div className='w-[800px]'>
               <select value={selectedGender} onChange={(e) => setSelectedGender(e.target.value)} className='mb-6 shadow-xl bg-[#4f6d79] text-white font-bold w-full text-center rounded-[20px]'>
                   <option value="">All Genders</option>
@@ -260,13 +260,14 @@ export const Auction = () => {
         </div>
 
 
-        <div className='flex flex-col mt-40 w-[20%]'>
+        <div className='flex flex-col mt-40 w-[30%]'>
           <h2 className='font-bold text-center mb-4'>Teams:</h2>
           <table className='w-full border-collapse border border-black'>
             <thead>
               <tr>
                 <th className='w-32 border border-black px-4 py-2'>Team Name</th>
-                <th className='w-32 border border-black px-4 py-2'>Team Amount</th>
+                <th className='w-32 border border-black px-4 py-2'>Manger</th>
+                <th className='w-32 border border-black px-4 py-2'>Available Coin</th>
               </tr>
             </thead>
             <tbody>
@@ -275,11 +276,12 @@ export const Auction = () => {
                   <td className='border border-black px-4 py-2'>
                     <button
                       onClick={() => handleTeamClick(team.id)}
-                      className='bg-blue-500 text-white w-32 px-2 py-1 rounded hover:bg-blue-600'
+                      className='bg-blue-500 text-white w-24 px-2 py-1 rounded hover:bg-blue-600'
                     >
                       {team.teamName}
                     </button>
                   </td>
+                  <td className='border border-black px-4 py-2'>{team.teamManager}</td>
                   <td className='border border-black px-4 py-2'>{team.teamAmount}</td>
                 </tr>
               ))}
