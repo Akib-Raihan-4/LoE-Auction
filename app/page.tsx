@@ -3,7 +3,7 @@ import  {Auction}  from '@/components/auction'
 // 
 export default function Home() {
   return (
-    <div >
+    <div className='bg-[#e5e5e5]'>
       <Auction/>
       {/* <PlayerCard/> */}
     </div>

@@ -55,8 +55,10 @@ export const Auction = () => {
   useEffect(() => {
     let filteredData = playerData;
   
-    if (selectedRating) {
-      filteredData = filteredData.filter((player:any) => player.rating === selectedRating);
+    if (selectedRating === 'Icon') {
+      filteredData = filteredData.filter((player:any) => player.rating === 'Icon');
+    }else if (selectedGender=='Male' && selectedRating === 'Other Rating' ) {
+      filteredData = filteredData.filter((player: any) => player.rating !== 'Icon');
     }
   
     if (selectedGender) {
@@ -161,29 +163,31 @@ export const Auction = () => {
     setChanges(Date.now())
   }
   return (
-    <div className='w-[1440px] flex mx-auto'>
-        <div className='w-[80%] h-screen flex flex-col justify-center items-center'>
+    <div className='max-w-[1440px] w-screen flex sm:mx-auto mx-10'>
+        <div className='w-[80%] h-screen flex flex-col mt-40 items-center'>
+            <div className='w-[800px] '>
+              <select value={selectedGender} onChange={(e) => setSelectedGender(e.target.value)} className='mb-6 shadow-xl bg-[#4f6d79] text-white font-bold w-full'>
+                  <option value="">All Genders</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+              </select>
+            </div>
             {selectedPlayer && (
                 <>
                   <PlayerCard name={selectedPlayer.name} url={selectedPlayer.image} position={selectedPlayer.position} rating={selectedPlayer.rating} department={selectedPlayer.department}/>
                 </>
             )}
-            <select value={selectedGender} onChange={(e) => setSelectedGender(e.target.value)} className='mt-6 w-[40%] bg-slate-200 shadow-xl'>
-                <option value="">All Genders</option>
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-            </select>
-            <select value={selectedRating} onChange={handleRatingChange} className='mt-6 w-[40%] bg-slate-200 shadow-xl'>
-                <option value="">All Ratings</option>
+            <div className='w-[800px] '>
+              <select value={selectedRating} onChange={handleRatingChange} className='mt-6  shadow-xl bg-[#4f6d79] text-white font-bold w-full'>
+                <option value="">Select Rating</option>
                 <option value="Icon">Icon</option>
-                <option value="A">A</option>
-                <option value="B">B</option>
-                <option value="C">C</option>
-            </select>
+                <option value="Other Rating">Other Rating</option>
+              </select>
+            </div>
         </div>
 
 
-        <div className='flex flex-col justify-center w-[20%]'>
+        <div className='flex flex-col mt-40 w-[20%]'>
             <h2 className='font-bold text-center mb-8'>Teams:</h2>
             <ul className='w-full'>
                 {teamData.map((team:any) => (
