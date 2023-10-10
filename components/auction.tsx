@@ -57,7 +57,7 @@ export const Auction = () => {
   
     if (selectedRating === 'Icon') {
       filteredData = filteredData.filter((player:any) => player.rating === 'Icon');
-    }else if (selectedGender=='Male' && selectedRating === 'Other Rating' ) {
+    }else if (selectedRating === 'Other Rating' ) {
       filteredData = filteredData.filter((player: any) => player.rating !== 'Icon');
     }
   
@@ -72,6 +72,9 @@ export const Auction = () => {
       setSelectedPlayer(null);
     }
   }, [selectedRating, selectedGender, playerData]);
+
+
+  
   
 
   const handleBidSubmission = async (bidAmount:any) => {
@@ -179,7 +182,7 @@ export const Auction = () => {
             )}
             <div className='w-[800px] '>
               <select value={selectedRating} onChange={handleRatingChange} className='mt-6  shadow-xl bg-[#4f6d79] text-white font-bold w-full'>
-                <option value="">Select Rating</option>
+                <option value="">All Rating</option>
                 <option value="Icon">Icon</option>
                 <option value="Other Rating">Other Rating</option>
               </select>
