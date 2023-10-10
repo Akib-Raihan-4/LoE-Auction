@@ -12,8 +12,10 @@ export const PlayerCard = ({ name, url, position, rating, department }: any) => 
       console.log(nameWidth)
       if (nameWidth > 380) {
         setBottomPosition(120); 
-      }else if(nameWidth>215 && nameWidth<380){
-        setBottomPosition(220)
+      }else if(nameWidth>215 && nameWidth<350){
+        setBottomPosition(230)
+      }else if(nameWidth>340 && nameWidth<380){
+        setBottomPosition(200)
       }
       else {
         setBottomPosition(270); 
@@ -23,7 +25,7 @@ export const PlayerCard = ({ name, url, position, rating, department }: any) => 
 
   return (
     <div className='relative'>
-      <img src={url} alt="" className='w-[500px] h-[500px] absolute top-36 right-0 z-0' />
+      <img src={url} alt="" className='w-[500px] h-[500px] absolute top-36 right-0 z-0 object-cover object-center' />
       <div className='relative shadow-[15px_10px_40px_10px_rgba(0,0,0,0.5)]'>
         <div>
           <Image src="/playerCardPNG.png" width={800} height={100} priority alt="" className='w-[800px] z-10' />
