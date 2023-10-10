@@ -10,13 +10,16 @@ export const PlayerCard = ({ name, url, position, rating, department }: any) => 
     if (nameRef.current) {
       const nameWidth = nameRef.current.offsetWidth;
       console.log(nameWidth)
-      if (nameWidth > 200) {
-        setBottomPosition(70); 
-      } else {
-        setBottomPosition(144); 
+      if (nameWidth > 380) {
+        setBottomPosition(120); 
+      }else if(nameWidth>215 && nameWidth<380){
+        setBottomPosition(220)
+      }
+      else {
+        setBottomPosition(270); 
       }
     }
-  }, [name]);
+  });
 
   return (
     <div className='relative'>
@@ -25,11 +28,16 @@ export const PlayerCard = ({ name, url, position, rating, department }: any) => 
         <img src="playerCardPNG.png" alt="" className='w-[800px] z-10' />
         <h1
           ref={nameRef}
-          className='bottom-[132px] text-black absolute font-bold'
+          className='absolute bottom-[230px] text-white font-extrabold text-2xl'
           style={{ left: bottomPosition }}
         >
           {name}
-          {rating}
+          {/* Shamsun Nahar Majumder Mahapar */}
+          {/* Mohammed Rafidul Islam */}
+          {/* Ayesha Binte Hasan Oishee bella  */}
+          {/* {rating} */}
+          {/* SHAFIN SHAHRIA */}
+          {/* MEHEDI SUREM */}
         </h1>
       </div>
     </div>
