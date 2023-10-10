@@ -188,28 +188,38 @@ export const Auction = () => {
 
 
         <div className='flex flex-col mt-40 w-[20%]'>
-            <h2 className='font-bold text-center mb-8'>Teams:</h2>
-            <ul className='w-full'>
-                {teamData.map((team:any) => (
-                <li key={team.id}>
+          <h2 className='font-bold text-center mb-4'>Teams:</h2>
+          <table className='w-full border-collapse border border-black'>
+            <thead>
+              <tr>
+                <th className='w-32 border border-black px-4 py-2'>Team Name</th>
+                <th className='w-32 border border-black px-4 py-2'>Team Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {teamData.map((team:any) => (
+                <tr key={team.id}>
+                  <td className='border border-black px-4 py-2'>
                     <button
-                    onClick={() => handleTeamClick(team.id)}
-                    className='flex items-center gap-2'
+                      onClick={() => handleTeamClick(team.id)}
+                      className='bg-blue-500 text-white w-32 px-2 py-1 rounded hover:bg-blue-600'
                     >
-                    <span className='w-32 text-left'>{team.teamName}</span>
-                    <span className='w-16'>{team.teamAmount}</span>
-                    <span className=''><BsCoin/></span>
+                      {team.teamName}
                     </button>
-                </li>
-                ))}
-            </ul>
+                  </td>
+                  <td className='border border-black px-4 py-2'>{team.teamAmount}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
+
         {showBidModal && (
             <div className='fixed inset-0 flex items-center justify-center z-50'>
                 <div className='modal-overlay absolute inset-0 bg-black opacity-50'></div>
                 <div className='modal-container bg-white w-96 mx-auto rounded shadow-lg z-50'>
                 <div className='modal-content p-4'>
-                    <h2 className='text-xl mb-4'>Place a Bid for Player <span className='font-bold'>{selectedPlayer && selectedPlayer.name}</span> </h2>
+                    <h2 className='text-xl mb-4'><span className='font-bold'>{selectedTeam && selectedTeam.teamName}</span> has placed the winning bid for player <span className='font-bold'>{selectedPlayer && selectedPlayer.name}</span> </h2>
                     <input
                     type='number'
                     className='w-full p-2 border rounded mb-4'
