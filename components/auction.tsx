@@ -127,25 +127,35 @@ export const Auction = () => {
 
   const updatePlayerRating = async (playerId: any, newRating: any) => {
     try {
+
+      const startingBidValues:any = {
+        'A': 600,
+        'B': 300,
+        'C': 200,
+      };
+
       await supabase
         .from('formPlayer')
-        .update({ rating: newRating })
+        .update({ rating: newRating, startingBid: startingBidValues[newRating] })
         .eq('id', playerId);
-      
+  
+
       const updatedPlayerData = playerData.map((player: any) => {
         if (player.id === playerId) {
-          return { ...player, rating: newRating };
+          return { ...player, rating: newRating, startingBid: startingBidValues[newRating] };
         }
         return player;
       });
-      
+  
       setPlayerData(updatedPlayerData);
+  
       selectNextRandomPlayer();
-
+  
     } catch (error) {
       console.error('Error updating player rating:', error);
     }
   };
+  
   
   const handleBidSubmission = async (bidAmount:any) => {
     if (selectedPlayer) {
