@@ -14,6 +14,9 @@ export const Auction = () => {
   const [selectedPlayer, setSelectedPlayer] = useState<any>(null);
   const [teamData, setTeamData] = useState<any>([]);
   const [changes, setChanges] = useState<any>(null);
+  const [selectedPlayerIndex, setSelectedPlayerIndex] = useState<number | null>(null);
+
+  // const [ratingChanges, setRatingChanges] = useState<any>(null)
   const [selectedTeamId, setSelectedTeamId] = useState<any>(null)
   const [selectedTeam, setSelectedTeam] = useState<any>(null);
   const [selectedGender, setSelectedGender] = useState('');
@@ -74,9 +77,76 @@ export const Auction = () => {
   }, [selectedRating, selectedGender, playerData]);
 
 
+  const handlePass = async () => {
+    if (selectedPlayer) {
+      
+      const playerRating = selectedPlayer.rating;
+
+      if (playerRating === 'Icon') {
+        selectNextRandomPlayer();
+      } else if (playerRating === 'A') {
+        await updatePlayerRating(selectedPlayer.id, 'B');
+        selectNextRandomPlayer();
+      } else if (playerRating === 'B') {
+        await updatePlayerRating(selectedPlayer.id, 'C');
+        selectNextRandomPlayer();
+      } else {
+        selectNextRandomPlayer();
+      }
+    }
+  };
+
+  const selectNextRandomPlayer = () => {
+    const availablePlayers = [...playerData];
   
+    const currentPlayerIndex = availablePlayers.findIndex((player) => player.id === selectedPlayer.id);
+    if (currentPlayerIndex !== -1) {
+      availablePlayers.splice(currentPlayerIndex, 1);
+    }
   
 
+    let filteredData = availablePlayers;
+    if (selectedRating === 'Icon') {
+      filteredData = filteredData.filter((player) => player.rating === 'Icon');
+    } else if (selectedRating === 'Other Rating') {
+      filteredData = filteredData.filter((player) => player.rating !== 'Icon');
+    }
+  
+    if (selectedGender) {
+      filteredData = filteredData.filter((player) => player.gender === selectedGender);
+    }
+  
+    if (filteredData.length > 0) {
+      const randomIndex = Math.floor(Math.random() * filteredData.length);
+      setSelectedPlayer(filteredData[randomIndex]);
+    } else {
+      setSelectedPlayer(null);
+    }
+  };
+  
+
+  const updatePlayerRating = async (playerId: any, newRating: any) => {
+    try {
+      await supabase
+        .from('formPlayer')
+        .update({ rating: newRating })
+        .eq('id', playerId);
+      
+      const updatedPlayerData = playerData.map((player: any) => {
+        if (player.id === playerId) {
+          return { ...player, rating: newRating };
+        }
+        return player;
+      });
+      
+      setPlayerData(updatedPlayerData);
+      selectNextRandomPlayer();
+
+    } catch (error) {
+      console.error('Error updating player rating:', error);
+    }
+  };
+  
   const handleBidSubmission = async (bidAmount:any) => {
     if (selectedPlayer) {
       try {
@@ -215,6 +285,14 @@ export const Auction = () => {
               ))}
             </tbody>
           </table>
+          <div className='flex items-center justify-center'>
+            <button
+              className='px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600'
+              onClick={handlePass}
+            >
+              Pass
+            </button>
+          </div>
         </div>
 
         {showBidModal && (
