@@ -228,48 +228,58 @@ export const Auction = () => {
           .select('teamAmount')
           .eq('id', selectedTeamId)
           .single();
-
+  
         if (teamError) {
           console.error(teamError);
           return;
         }
+  
         const currentAmount = team.teamAmount;
+  
         if (currentAmount - bidAmount < 0) {
-            console.error('Team does not have enough funds for this bid.');
-            setShowBidModal(false)
-            setShowUnsuccessModal(true)
-            return;
+          console.error('Team does not have enough funds for this bid.');
+          setShowBidModal(false);
+          setShowUnsuccessModal(true);
+          return;
         }
-    
-
+  
+ 
         const updatedAmount = Math.max(currentAmount - bidAmount, 0);
+  
         const { error: updateError } = await supabase
           .from('Team')
           .update({ teamAmount: updatedAmount })
           .eq('id', selectedTeamId);
-
+  
         if (updateError) {
           console.error(updateError);
           return;
         }
-
+  
         const updatedTeamData = [...teamData];
         const teamIndex = updatedTeamData.findIndex((team) => team.id === selectedTeamId);
+  
         if (teamIndex !== -1) {
           updatedTeamData[teamIndex].teamAmount = updatedAmount;
+  
+        
+          const newMaxBid = await calculateMaxBidForTeam(updatedTeamData[teamIndex], selectedPlayer);
+  
+          
+          updatedTeamData[teamIndex].maxBid = newMaxBid;
           setTeamData(updatedTeamData);
         }
-
+  
         const { data: playerData, error: playerError } = await supabase
           .from('formPlayer')
           .update({ selected: true })
           .eq('id', selectedPlayer.id);
-
+  
         if (playerError) {
           console.error(playerError);
           return;
         }
-
+  
         const { error: teamPlayerError } = await supabase
           .from('TeamPlayer')
           .upsert([
@@ -278,20 +288,21 @@ export const Auction = () => {
               playerID: selectedPlayer.id,
               playerPrice: bidAmount,
             },
-          ])
-
+          ]);
+  
         if (teamPlayerError) {
-          console.error(teamPlayerError)
+          console.error(teamPlayerError);
           return;
         }
-        setBidAmount("")
-        setShowBidModal(false)
-        setShowSuccessModal(true)
+        setBidAmount('');
+        setShowBidModal(false);
+        setShowSuccessModal(true);
       } catch (error) {
         console.error('Supabase error:', error);
       }
     }
   };
+  
 
   const handleTeamClick = async (teamId:any) => {
     setSelectedTeamId(teamId);
@@ -355,22 +366,15 @@ export const Auction = () => {
     }
   };
   
-  
 
   useEffect(() => {
-    if (selectedPlayer) {
-      const calculateMaxBids = async () => {
-        const maxBids = [];
-        for (const team of teamData) {
-          const maxBid = await calculateMaxBidForTeam(team, selectedPlayer);
-          maxBids.push(maxBid);
-        }
-        setMaxBids(maxBids);
-      };
-  
-      calculateMaxBids();
+   
+    for (const team of teamData) {
+        calculateMaxBidForTeam(team, selectedPlayer);
+      
     }
-  });
+   
+  },[]);
   
   
   // {console.log(teamData)}
