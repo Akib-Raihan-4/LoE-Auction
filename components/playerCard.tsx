@@ -9,7 +9,7 @@ export const PlayerCard = ({ name, url, position, rating, department }: any) => 
   useEffect(() => {
     if (nameRef.current) {
       const nameWidth = nameRef.current.offsetWidth;
-      console.log(nameWidth)
+      // console.log(nameWidth)
       if (nameWidth > 380) {
         setBottomPosition(120); 
       }else if(nameWidth>215 && nameWidth<350){

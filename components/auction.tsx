@@ -11,7 +11,6 @@ const calculatePlayerCounts = async (teamId:any) => {
     .select('playerID, playerPrice')
     .eq('teamID', teamId);
 
-  console.log(teamPlayers)
   if (teamPlayersError) {
     console.error(teamPlayersError);
     return {
@@ -22,7 +21,6 @@ const calculatePlayerCounts = async (teamId:any) => {
     };
   }
 
-  // Initialize counts
   const counts = {
     Icon: 0,
     A: 0,
@@ -31,7 +29,6 @@ const calculatePlayerCounts = async (teamId:any) => {
   };
 
   for (const teamPlayer of teamPlayers) {
-    // Fetch the player's rating from 'formPlayer' table
     const { data: playerData, error: playerError } = await supabase
       .from('formPlayer')
       .select('rating')
@@ -40,10 +37,9 @@ const calculatePlayerCounts = async (teamId:any) => {
 
     if (playerError) {
       console.error(playerError);
-      continue; // Skip this player if there's an error
+      continue; 
     }
 
-    // Increment the count based on player's rating
     if (playerData.rating === 'Icon') {
       counts.Icon++;
     } else if (playerData.rating === 'A') {
@@ -64,16 +60,15 @@ export const Auction = () => {
   const [showBidModal, setShowBidModal] = useState<any>(false);
   const [showSuccessModal, setShowSuccessModal] = useState<any>(false);
   const [showUnsuccessModal, setShowUnsuccessModal] = useState<any>(false);
-  const [bidAmount, setBidAmount] = useState('');
+  const [bidAmount, setBidAmount] = useState<any>('');
   const [selectedPlayer, setSelectedPlayer] = useState<any>(null);
   const [teamData, setTeamData] = useState<any>([]);
   const [changes, setChanges] = useState<any>(null);
-  const [selectedPlayerIndex, setSelectedPlayerIndex] = useState<number | null>(null);
-
-  const [selectedTeamId, setSelectedTeamId] = useState<any>(null)
+  const [selectedTeamId, setSelectedTeamId] = useState<any>(null);
   const [selectedTeam, setSelectedTeam] = useState<any>(null);
-  const [selectedGender, setSelectedGender] = useState('');
+  const [selectedGender, setSelectedGender] = useState<any>('');
   const [teamPlayerCounts, setTeamPlayerCounts] = useState<any>({});
+  const [maxBids, setMaxBids] = useState<any>([]);
 
   useEffect(() => {
     const fetchPlayerData = async () => {
@@ -313,6 +308,74 @@ export const Auction = () => {
     setShowSuccessModal(false)
     setChanges(Date.now())
   }
+
+
+  const calculateMaxBidForTeam = async (team, selectedPlayer) => {
+    // Define bid values for player ratings
+    const bidValues = {
+      A: 600,
+      B: 300,
+      C: 200,
+    };
+  
+    try {
+      // Calculate the number of players in each category for the team
+      const playerCounts = await calculatePlayerCounts(team.id);
+  
+      // Copy the team's remaining budget
+      let remainingBudget = team.teamAmount;
+  
+      // Deduct from maxBid based on team constraints
+      if (playerCounts.A === 0) {
+        remainingBudget -= bidValues.A;
+      }
+      if (playerCounts.B === 0) {
+        remainingBudget -= bidValues.B;
+      }
+      if (playerCounts.C === 0) {
+        remainingBudget -= 4 * bidValues.C;
+      } else if (playerCounts.C === 1) {
+        remainingBudget -= 3 * bidValues.C;
+      } else if (playerCounts.C === 2) {
+        remainingBudget -= 2 * bidValues.C;
+      } else if (playerCounts.C === 3) {
+        remainingBudget -= bidValues.C;
+      }
+  
+      // Update the maxBid value in the database
+      await supabase
+        .from('Team')
+        .update({ maxBid: remainingBudget })
+        .eq('id', team.id);
+  
+      return remainingBudget;
+    } catch (error) {
+      console.error('Error calculating max bid for team:', error);
+      return team.teamAmount; // Return team's full budget in case of an error
+    }
+  };
+  
+  
+  
+  // Inside your component or function, you can call the function like this:
+  useEffect(() => {
+    if (selectedPlayer) {
+      const calculateMaxBids = async () => {
+        const maxBids = [];
+        for (const team of teamData) {
+          const maxBid = await calculateMaxBidForTeam(team, selectedPlayer);
+          maxBids.push(maxBid);
+        }
+        setMaxBids(maxBids);
+      };
+  
+      calculateMaxBids();
+    }
+  });
+  
+  
+  // {console.log(teamData)}
+  
   return (
     <div className='max-w-[1440px] w-screen flex sm:mx-auto mx-10'>
         <div className='w-[60%] h-screen flex flex-col mt-40 items-center'>
@@ -340,39 +403,33 @@ export const Auction = () => {
 
         <div className='flex flex-col mt-40 w-[40%]'>
           <h2 className='font-bold text-center mb-4'>Teams:</h2>
-          <table className="w-full border-collapse border border-black">
+          <table className='w-full border-collapse border border-black'>
             <thead>
               <tr>
-                <th className="w-32 border border-black px-4 py-2">Team Name</th>
-                <th className="w-32 border border-black px-4 py-2">Manger</th>
-                <th className="w-32 border border-black px-4 py-2">Available Coin</th>
-                {/* <th className="w-32 border border-black px-4 py-2">Max Bid</th> */}
-                <th className="w-32 border border-black px-4 py-2">Icon</th>
-                <th className="w-32 border border-black px-4 py-2">A</th>
-                <th className="w-32 border border-black px-4 py-2">B</th>
-                <th className="w-32 border border-black px-4 py-2">C</th>
+                <th className='w-32 border border-black px-4 py-2'>Team Name</th>
+                <th className='w-32 border border-black px-4 py-2'>Manager</th>
+                <th className='w-32 border border-black px-4 py-2'>Available Coin</th>
+                <th className='w-32 border border-black px-4 py-2'>Max Bid</th>
               </tr>
             </thead>
             <tbody>
-              {teamData.map((team:any) => (
-                <tr key={team.id}>
-                  <td className="border border-black px-4 py-2">
-                    <button
-                      onClick={() => handleTeamClick(team.id)}
-                      className="bg-blue-500 text-white w-24 px-2 py-1 rounded hover:bg-blue-600"
-                    >
-                      {team.teamName}
-                    </button>
-                  </td>
-                  <td className="border border-black px-4 py-2">{team.teamManager}</td>
-                  <td className="border border-black px-4 py-2">{team.teamAmount}</td>
-                  {/* <td className="border border-black px-4 py-2">{calculateMaxBid(team)}</td> */}
-                  <td className="border border-black px-4 py-2">{teamPlayerCounts[team.id]?.Icon}</td>
-                  <td className="border border-black px-4 py-2">{teamPlayerCounts[team.id]?.A}</td>
-                  <td className="border border-black px-4 py-2">{teamPlayerCounts[team.id]?.B}</td>
-                  <td className="border border-black px-4 py-2">{teamPlayerCounts[team.id]?.C}</td>
-                </tr>
-              ))}
+              {teamData
+                .filter((team:any) => selectedGender === '' || team.teamGender === selectedGender)
+                .map((team:any, index:any) => (
+                  <tr key={team.id}>
+                    <td className='border border-black px-4 py-2'>
+                      <button
+                        onClick={() => handleTeamClick(team.id)}
+                        className='bg-blue-500 text-white w-24 px-2 py-1 rounded hover:bg-blue-600'
+                      >
+                        {team.teamName}
+                      </button>
+                    </td>
+                    <td className='border border-black px-4 py-2'>{team.teamManager}</td>
+                    <td className='border border-black px-4 py-2'>{team.teamAmount}</td>
+                    <td className='border border-black px-4 py-2'>{team.maxBid}</td>
+                  </tr>
+                ))}
             </tbody>
           </table>
           <div className='w-full'>
