@@ -310,8 +310,8 @@ export const Auction = () => {
   }
 
 
-  const calculateMaxBidForTeam = async (team, selectedPlayer) => {
-    // Define bid values for player ratings
+  const calculateMaxBidForTeam = async (team:any, selectedPlayer:any) => {
+  
     const bidValues = {
       A: 600,
       B: 300,
@@ -319,13 +319,13 @@ export const Auction = () => {
     };
   
     try {
-      // Calculate the number of players in each category for the team
+     
       const playerCounts = await calculatePlayerCounts(team.id);
   
-      // Copy the team's remaining budget
+     
       let remainingBudget = team.teamAmount;
   
-      // Deduct from maxBid based on team constraints
+      
       if (playerCounts.A === 0) {
         remainingBudget -= bidValues.A;
       }
@@ -342,7 +342,7 @@ export const Auction = () => {
         remainingBudget -= bidValues.C;
       }
   
-      // Update the maxBid value in the database
+    
       await supabase
         .from('Team')
         .update({ maxBid: remainingBudget })
@@ -351,13 +351,12 @@ export const Auction = () => {
       return remainingBudget;
     } catch (error) {
       console.error('Error calculating max bid for team:', error);
-      return team.teamAmount; // Return team's full budget in case of an error
+      return team.teamAmount;
     }
   };
   
   
-  
-  // Inside your component or function, you can call the function like this:
+
   useEffect(() => {
     if (selectedPlayer) {
       const calculateMaxBids = async () => {
