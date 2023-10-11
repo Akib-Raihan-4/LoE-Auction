@@ -4,6 +4,60 @@ import supabase from '@/config/supabase';
 import {BsCoin} from 'react-icons/bs'
 import  {PlayerCard}  from '@/components/playerCard'
 
+
+const calculatePlayerCounts = async (teamId:any) => {
+  const { data: teamPlayers, error: teamPlayersError } = await supabase
+    .from('TeamPlayer')
+    .select('playerID, playerPrice')
+    .eq('teamID', teamId);
+
+  console.log(teamPlayers)
+  if (teamPlayersError) {
+    console.error(teamPlayersError);
+    return {
+      Icon: 0,
+      A: 0,
+      B: 0,
+      C: 0,
+    };
+  }
+
+  // Initialize counts
+  const counts = {
+    Icon: 0,
+    A: 0,
+    B: 0,
+    C: 0,
+  };
+
+  for (const teamPlayer of teamPlayers) {
+    // Fetch the player's rating from 'formPlayer' table
+    const { data: playerData, error: playerError } = await supabase
+      .from('formPlayer')
+      .select('rating')
+      .eq('id', teamPlayer.playerID)
+      .single();
+
+    if (playerError) {
+      console.error(playerError);
+      continue; // Skip this player if there's an error
+    }
+
+    // Increment the count based on player's rating
+    if (playerData.rating === 'Icon') {
+      counts.Icon++;
+    } else if (playerData.rating === 'A') {
+      counts.A++;
+    } else if (playerData.rating === 'B') {
+      counts.B++;
+    } else if (playerData.rating === 'C') {
+      counts.C++;
+    }
+  }
+
+  return counts;
+};
+
 export const Auction = () => {
   const [playerData, setPlayerData] = useState<any>([]);
   const [selectedRating, setSelectedRating] = useState<any>('');
@@ -16,10 +70,10 @@ export const Auction = () => {
   const [changes, setChanges] = useState<any>(null);
   const [selectedPlayerIndex, setSelectedPlayerIndex] = useState<number | null>(null);
 
-  // const [ratingChanges, setRatingChanges] = useState<any>(null)
   const [selectedTeamId, setSelectedTeamId] = useState<any>(null)
   const [selectedTeam, setSelectedTeam] = useState<any>(null);
   const [selectedGender, setSelectedGender] = useState('');
+  const [teamPlayerCounts, setTeamPlayerCounts] = useState<any>({});
 
   useEffect(() => {
     const fetchPlayerData = async () => {
@@ -76,6 +130,20 @@ export const Auction = () => {
     }
   }, [selectedRating, selectedGender, playerData]);
 
+  useEffect(() => {
+    const fetchPlayerCounts = async () => {
+      const playerCounts:any = {};
+
+      for (const team of teamData) {
+        const counts = await calculatePlayerCounts(team.id);
+        playerCounts[team.id] = counts;
+      }
+
+      setTeamPlayerCounts(playerCounts);
+    };
+
+    fetchPlayerCounts();
+  });
 
   const handlePass = async () => {
     if (selectedPlayer) {
@@ -247,7 +315,7 @@ export const Auction = () => {
   }
   return (
     <div className='max-w-[1440px] w-screen flex sm:mx-auto mx-10'>
-        <div className='w-[70%] h-screen flex flex-col mt-40 items-center'>
+        <div className='w-[60%] h-screen flex flex-col mt-40 items-center'>
             <div className='w-[800px]'>
               <select value={selectedGender} onChange={(e) => setSelectedGender(e.target.value)} className='mb-6 shadow-xl bg-[#4f6d79] text-white font-bold w-full text-center rounded-[20px]'>
                   <option value="">All Genders</option>
@@ -270,36 +338,46 @@ export const Auction = () => {
         </div>
 
 
-        <div className='flex flex-col mt-40 w-[30%]'>
+        <div className='flex flex-col mt-40 w-[40%]'>
           <h2 className='font-bold text-center mb-4'>Teams:</h2>
-          <table className='w-full border-collapse border border-black'>
+          <table className="w-full border-collapse border border-black">
             <thead>
               <tr>
-                <th className='w-32 border border-black px-4 py-2'>Team Name</th>
-                <th className='w-32 border border-black px-4 py-2'>Manger</th>
-                <th className='w-32 border border-black px-4 py-2'>Available Coin</th>
+                <th className="w-32 border border-black px-4 py-2">Team Name</th>
+                <th className="w-32 border border-black px-4 py-2">Manger</th>
+                <th className="w-32 border border-black px-4 py-2">Available Coin</th>
+                {/* <th className="w-32 border border-black px-4 py-2">Max Bid</th> */}
+                <th className="w-32 border border-black px-4 py-2">Icon</th>
+                <th className="w-32 border border-black px-4 py-2">A</th>
+                <th className="w-32 border border-black px-4 py-2">B</th>
+                <th className="w-32 border border-black px-4 py-2">C</th>
               </tr>
             </thead>
             <tbody>
-              {teamData.filter((team:any) => selectedGender === '' || team.teamGender === selectedGender).map((team:any) => (
+              {teamData.map((team:any) => (
                 <tr key={team.id}>
-                  <td className='border border-black px-4 py-2'>
+                  <td className="border border-black px-4 py-2">
                     <button
                       onClick={() => handleTeamClick(team.id)}
-                      className='bg-blue-500 text-white w-24 px-2 py-1 rounded hover:bg-blue-600'
+                      className="bg-blue-500 text-white w-24 px-2 py-1 rounded hover:bg-blue-600"
                     >
                       {team.teamName}
                     </button>
                   </td>
-                  <td className='border border-black px-4 py-2'>{team.teamManager}</td>
-                  <td className='border border-black px-4 py-2'>{team.teamAmount}</td>
+                  <td className="border border-black px-4 py-2">{team.teamManager}</td>
+                  <td className="border border-black px-4 py-2">{team.teamAmount}</td>
+                  {/* <td className="border border-black px-4 py-2">{calculateMaxBid(team)}</td> */}
+                  <td className="border border-black px-4 py-2">{teamPlayerCounts[team.id]?.Icon}</td>
+                  <td className="border border-black px-4 py-2">{teamPlayerCounts[team.id]?.A}</td>
+                  <td className="border border-black px-4 py-2">{teamPlayerCounts[team.id]?.B}</td>
+                  <td className="border border-black px-4 py-2">{teamPlayerCounts[team.id]?.C}</td>
                 </tr>
               ))}
             </tbody>
           </table>
           <div className='w-full'>
             <button
-              className='px-4 py-2 w-full mt-4 bg-red-500 text-white rounded hover:bg-red-600'
+              className='px-4 py-2 w-full mt-4 bg-red-500 text-white hover:bg-red-600 rounded-[30px]'
               onClick={handlePass}
             >
               Pass
