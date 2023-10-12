@@ -249,7 +249,6 @@ export const Auction = () => {
   const handleBidSubmission = async (bidAmount: any) => {
     if (selectedPlayer) {
       try {
-        calculateMaxBid(bidAmount, selectedTeamId)
         const { data: team, error: teamError } = await supabase
           .from('Team')
           .select('teamAmount')
@@ -341,8 +340,8 @@ export const Auction = () => {
     <>
     <div className='max-w-[1440px] mx-auto'>
       {selectedPlayer &&(
-        <h1 className='text-center pt-20 text-6xl font-extrabold '>
-        Starting Bid: <span className='text-[#17273e] '>{selectedPlayer.startingBid} LP</span>
+        <h1 className='text-center pt-20 text-6xl font-extrabold'>
+        Starting Bid: <span className='text-[#17273e]'>{selectedPlayer.startingBid} LP</span>
         </h1>
       )}
     </div>
