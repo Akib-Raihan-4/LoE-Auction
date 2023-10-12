@@ -505,7 +505,7 @@ export const Auction = () => {
       {selectedPlayer &&(
         <>
           <h1 className='text-center pt-20 text-6xl font-extrabold '>
-          Experience of  <span className='text-[#17273e] '>{selectedPlayer.name} LP</span>
+          Experience of  <span className='text-[#17273e] '>{selectedPlayer.name} </span>
           </h1>
           <li className='text-center py-10 text-3xl font-bold'>{selectedPlayer.pastTour}</li>
         </>
