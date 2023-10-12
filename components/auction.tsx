@@ -58,111 +58,101 @@ export const Auction = () => {
     fetchTeamData();
   });
 
-  const calculateMaxBid = async (bidAmount:any = 0, selectedTeamId:any) => {
-    const bidValues = {
-      'A': 600,
-      'B': 300,
-      'C': 200,
-    };
-  
-    const { data: teams, error: teamsError } = await supabase
-      .from('Team')
-      .select('*')
-      .eq('id',selectedTeamId);
-    if (teamsError) {
-      console.error(teamsError);
-      return;
-    }
-  
-    for (const team of teams) {
-      const teamID = team.id;
-  
-      const { data: teamPlayers, error: teamPlayersError } = await supabase
-        .from('TeamPlayer')
-        .select('playerID')
-        .eq('teamID', teamID);
-  
-      if (teamPlayersError) {
-        console.error(teamPlayersError);
+  const calculateMaxBid = async (bidAmount:any = 0, selectedTeamId:any, selectedPlayer:any) => {
+
+    if(selectedPlayer){
+      const bidValues = {
+        'A': 600,
+        'B': 300,
+        'C': 200,
+      };
+    
+      const { data: teams, error: teamsError } = await supabase
+        .from('Team')
+        .select('*')
+        .eq('id',selectedTeamId);
+      if (teamsError) {
+        console.error(teamsError);
         return;
       }
-  
-      const playerRatings = {
-        'A': 0,
-        'B': 0,
-        'C': 0,
-      };
-  
-      for (const player of teamPlayers) {
-        const { data: playerData, error: playerError } = await supabase
-          .from('formPlayer')
-          .select('rating')
-          .eq('id', player.playerID)
-          .single();
-  
-        if (playerError) {
-          console.error(playerError);
+    
+      for (const team of teams) {
+        const teamID = team.id;
+    
+        const { data: teamPlayers, error: teamPlayersError } = await supabase
+          .from('TeamPlayer')
+          .select('playerID')
+          .eq('teamID', teamID);
+    
+        if (teamPlayersError) {
+          console.error(teamPlayersError);
           return;
         }
-  
-        if (playerData.rating === 'A') {
-          playerRatings['A']++;
-        } else if (playerData.rating === 'B') {
-          playerRatings['B']++;
-        } else if (playerData.rating === 'C') {
-          playerRatings['C']++;
+    
+        const playerRatings = {
+          'Icon':0,
+          'A': 0,
+          'B': 0,
+          'C': 0,
+        };
+    
+        for (const player of teamPlayers) {
+          const { data: playerData, error: playerError } = await supabase
+            .from('formPlayer')
+            .select('rating')
+            .eq('id', player.playerID)
+            .single();
+    
+          if (playerError) {
+            console.error(playerError);
+            return;
+          }
+    
+          if (playerData.rating === 'A') {
+            playerRatings['A']++;
+          } else if (playerData.rating === 'B') {
+            playerRatings['B']++;
+          } else if (playerData.rating === 'C') {
+            playerRatings['C']++;
+          }
         }
-      }
-  
-      let remainingBudget = team.teamAmount - bidAmount;
-  
-      if (playerRatings['A'] === 0) {
-        remainingBudget -= bidValues['A'];
-      }
+    
+        let remainingBudget = team.teamAmount - bidAmount;
 
-      if(playerRatings['A']>0){
-        remainingBudget -= bidValues['C']
-      }
+        
+    
+        if (playerRatings['A'] === 0 && selectedPlayer.rating !== 'A') {
+          remainingBudget -= bidValues['A'];
+        }
+        
 
-      if (playerRatings['B'] === 0) {
-        remainingBudget -= bidValues['B'];
-      }
+        if (playerRatings['B'] === 0 && selectedPlayer.rating !== 'B') {
+          remainingBudget -= bidValues['B'];
+        }
+        
 
-      if(playerRatings['B']>0){
-        remainingBudget -= bidValues['C']
+        if (playerRatings['C'] === 0 && selectedPlayer.rating !== 'C') {
+          remainingBudget -= 4 * bidValues['C'];
+        }
+        if (playerRatings['C'] === 1 && selectedPlayer.rating !== 'C') {
+          remainingBudget -= 3 * bidValues['C'];
+        }
+        if (playerRatings['C'] === 2 && selectedPlayer.rating !== 'C') {
+          remainingBudget -= 2 * bidValues['C'];
+        }
+        if (playerRatings['C'] === 3 && selectedPlayer.rating !== 'C') {
+          remainingBudget -= 1 * bidValues['C'];
+        }
+    
+        await supabase.from('Team').update({ maxBid: remainingBudget }).eq('id', teamID);
       }
-      
-      if(playerRatings['C']){
-        remainingBudget -= bidValues['C']
-      }
-
-      if(teamPlayers.length > 5){
-        remainingBudget = team.teamAmount
-      }
-  
-      // switch (playerRatings['C']) {
-      //   case 0:
-      //     remainingBudget -= 4 * bidValues['C'];
-      //     break;
-      //   case 1:
-      //     remainingBudget -= 3 * bidValues['C'];
-      //     break;
-      //   case 2:
-      //     remainingBudget -= 2 * bidValues['C'];
-      //     break;
-      //   case 3:
-      //     remainingBudget -= bidValues['C'];
-      //     break;
-      // }
-  
-      await supabase.from('Team').update({ maxBid: remainingBudget }).eq('id', teamID);
     }
   };
 
   useEffect(() => {
     
-    calculateMaxBid(bidAmount,selectedTeamId);
-  },[changes]);
+    calculateMaxBid(bidAmount,selectedTeamId, selectedPlayer);
+  },[changes,selectedPlayer]);
 
   useEffect(() => {
     let filteredData = playerData;
@@ -349,15 +339,15 @@ export const Auction = () => {
 
   return (
     <>
-    {/* <div>
+    <div className='max-w-[1440px] mx-auto'>
       {selectedPlayer &&(
-        <>
-        {selectedPlayer.startingBid}
-        </>
+        <h1 className='text-center pt-20 text-6xl font-extrabold '>
+        Starting Bid: <span className='text-[#17273e] '>{selectedPlayer.startingBid} LP</span>
+        </h1>
       )}
-    </div> */}
-      <div className='max-w-[1440px] w-screen flex sm:mx-auto mx-10'>
-        <div className='w-[60%] h-screen flex flex-col mt-40 items-center'>
+    </div>
+      <div className='max-w-[1440px] w-screen flex gap-10 sm:mx-auto mx-10'>
+        <div className='w-[60%] h-screen flex flex-col mt-20 items-center'>
           <div className='w-[800px]'>
             <select
               value={selectedGender}
@@ -395,7 +385,7 @@ export const Auction = () => {
           </div>
         </div>
 
-        <div className='flex flex-col mt-40 w-[40%]'>
+        <div className='flex flex-col mt-20 w-[40%]'>
           <h2 className='font-bold text-center mb-4'>Teams:</h2>
           <table className='w-full border-collapse border border-black'>
             <thead>
@@ -510,6 +500,17 @@ export const Auction = () => {
           </div>
         )}
       </div>
+
+      <div className='max-w-[1440px] mx-auto'>
+      {selectedPlayer &&(
+        <>
+          <h1 className='text-center pt-20 text-6xl font-extrabold '>
+          Experience of  <span className='text-[#17273e] '>{selectedPlayer.name} LP</span>
+          </h1>
+          <li className='text-center py-10 text-3xl font-bold'>{selectedPlayer.pastTour}</li>
+        </>
+      )}
+    </div>
     </>
   );
 };

@@ -13,6 +13,9 @@ const config: Config = {
         'gradient-conic':
           'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
       },
+      textColor: {
+        '3d': 'text-shadow: 2px 2px 0px rgba(0, 0, 0, 0.3); background: linear-gradient(135deg, #17273e, #0c1529); background-clip: text; -webkit-background-clip: text; color: transparent;',
+      },
     },
   },
   plugins: [],
