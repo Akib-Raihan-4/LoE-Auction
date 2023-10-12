@@ -59,14 +59,17 @@ export const Auction = () => {
     fetchTeamData();
   });
 
-  const calculateMaxBid = async () => {
+  const calculateMaxBid = async (bidAmount:any = 0, selectedTeamId:any) => {
     const bidValues = {
       'A': 600,
       'B': 300,
       'C': 200,
     };
   
-    const { data: teams, error: teamsError } = await supabase.from('Team').select('*');
+    const { data: teams, error: teamsError } = await supabase
+      .from('Team')
+      .select('*')
+      .eq('id',selectedTeamId);
     if (teamsError) {
       console.error(teamsError);
       return;
@@ -112,7 +115,7 @@ export const Auction = () => {
         }
       }
   
-      let remainingBudget = team.teamAmount;
+      let remainingBudget = team.teamAmount - bidAmount;
   
       if (playerRatings['A'] === 0) {
         remainingBudget -= bidValues['A'];
@@ -142,8 +145,8 @@ export const Auction = () => {
 
   useEffect(() => {
     
-    calculateMaxBid();
-  });
+    calculateMaxBid(bidAmount,selectedTeamId);
+  },[changes]);
 
   useEffect(() => {
     let filteredData = playerData;
@@ -242,6 +245,7 @@ export const Auction = () => {
   const handleBidSubmission = async (bidAmount: any) => {
     if (selectedPlayer) {
       try {
+        calculateMaxBid(bidAmount, selectedTeamId)
         const { data: team, error: teamError } = await supabase
           .from('Team')
           .select('teamAmount')
