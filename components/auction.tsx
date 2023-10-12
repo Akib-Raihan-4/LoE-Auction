@@ -277,8 +277,9 @@ export const Auction = () => {
       const playerRating = selectedPlayer.rating;
 
       if (playerRating === 'Icon') {
-        selectNextRandomPlayer();
-      } else if (playerRating === 'A') {
+        const newStartingBid = selectedPlayer.startingBid + 100;
+        await updatePlayerStartingBid(selectedPlayer.id, newStartingBid);
+      }else if (playerRating === 'A') {
         await updatePlayerRating(selectedPlayer.id, 'B');
         selectNextRandomPlayer();
       } else if (playerRating === 'B') {
@@ -344,6 +345,32 @@ export const Auction = () => {
       console.error('Error updating player rating:', error);
     }
   };
+
+  const updatePlayerStartingBid = async (playerId:any, newStartingBid:any) => {
+    try {
+      const { data, error } = await supabase
+        .from('formPlayer')
+        .update({ startingBid: newStartingBid })
+        .eq('id', playerId);
+
+      const updatedPlayerData = playerData.map((player:any) => {
+        if (player.id === playerId) {
+          return { ...player, startingBid: newStartingBid };
+        }
+        return player;
+      });
+
+      setPlayerData(updatedPlayerData);
+
+      selectNextRandomPlayer();
+
+      if (error) {
+        console.error('Error updating player starting bid:', error);
+      }
+    } catch (error) {
+      console.error('Error updating player starting bid:', error);
+    }
+  }
 
   const handleBidSubmission = async (bidAmount: any) => {
     if (selectedPlayer) {
