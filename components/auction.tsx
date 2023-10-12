@@ -1,7 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import supabase from '@/config/supabase';
-import { BsCoin } from 'react-icons/bs';
 import { PlayerCard } from '@/components/playerCard';
 
 export const Auction = () => {
@@ -14,7 +13,7 @@ export const Auction = () => {
   const [selectedPlayer, setSelectedPlayer] = useState<any>(null);
   const [teamData, setTeamData] = useState<any>([]);
   const [changes, setChanges] = useState<any>(null);
-  const [selectedPlayerIndex, setSelectedPlayerIndex] = useState<any>(null);
+  // const [selectedPlayerIndex, setSelectedPlayerIndex] = useState<any>(null);
 
   const [selectedTeamId, setSelectedTeamId] = useState<any>(null);
   const [selectedTeam, setSelectedTeam] = useState<any>(null);
@@ -120,24 +119,41 @@ export const Auction = () => {
       if (playerRatings['A'] === 0) {
         remainingBudget -= bidValues['A'];
       }
+
+      if(playerRatings['A']>0){
+        remainingBudget -= bidValues['C']
+      }
+
       if (playerRatings['B'] === 0) {
         remainingBudget -= bidValues['B'];
       }
-  
-      switch (playerRatings['C']) {
-        case 0:
-          remainingBudget -= 4 * bidValues['C'];
-          break;
-        case 1:
-          remainingBudget -= 3 * bidValues['C'];
-          break;
-        case 2:
-          remainingBudget -= 2 * bidValues['C'];
-          break;
-        case 3:
-          remainingBudget -= bidValues['C'];
-          break;
+
+      if(playerRatings['B']>0){
+        remainingBudget -= bidValues['C']
       }
+      
+      if(playerRatings['C']){
+        remainingBudget -= bidValues['C']
+      }
+
+      if(teamPlayers.length > 5){
+        remainingBudget = team.teamAmount
+      }
+  
+      // switch (playerRatings['C']) {
+      //   case 0:
+      //     remainingBudget -= 4 * bidValues['C'];
+      //     break;
+      //   case 1:
+      //     remainingBudget -= 3 * bidValues['C'];
+      //     break;
+      //   case 2:
+      //     remainingBudget -= 2 * bidValues['C'];
+      //     break;
+      //   case 3:
+      //     remainingBudget -= bidValues['C'];
+      //     break;
+      // }
   
       await supabase.from('Team').update({ maxBid: remainingBudget }).eq('id', teamID);
     }
@@ -151,10 +167,8 @@ export const Auction = () => {
   useEffect(() => {
     let filteredData = playerData;
 
-    if (selectedRating === 'Icon') {
-      filteredData = filteredData.filter((player:any) => player.rating === 'Icon');
-    } else if (selectedRating === 'Other Rating') {
-      filteredData = filteredData.filter((player:any) => player.rating !== 'Icon');
+    if (selectedRating) {
+      filteredData = filteredData.filter((player:any) => player.rating === selectedRating);
     }
 
     if (selectedGender) {
@@ -275,7 +289,6 @@ export const Auction = () => {
           return;
         }
   
-        // Update the teamData with the new maxBid
         const updatedTeamData = teamData.map((team:any) => {
           if (team.id === selectedTeamId) {
             return { ...team, teamAmount: updatedAmount };
@@ -335,157 +348,168 @@ export const Auction = () => {
   };
 
   return (
-    <div className='max-w-[1440px] w-screen flex sm:mx-auto mx-10'>
-      <div className='w-[60%] h-screen flex flex-col mt-40 items-center'>
-        <div className='w-[800px]'>
-          <select
-            value={selectedGender}
-            onChange={(e) => setSelectedGender(e.target.value)}
-            className='mb-6 shadow-xl bg-[#4f6d79] text-white font-bold w-full text-center rounded-[20px]'
-          >
-            <option value=''>All Genders</option>
-            <option value='Male'>Male</option>
-            <option value='Female'>Female</option>
-          </select>
-        </div>
-        {selectedPlayer && (
-          <>
-            <PlayerCard
-              name={selectedPlayer.name}
-              url={selectedPlayer.image}
-              position={selectedPlayer.position}
-              rating={selectedPlayer.rating}
-              department={selectedPlayer.department}
-            />
-          </>
-        )}
-        <div className='w-[800px] '>
-          <select
-            value={selectedRating}
-            onChange={handleRatingChange}
-            className='mt-6  shadow-xl bg-[#4f6d79] text-white font-bold w-full text-center rounded-[20px]'
-          >
-            <option value=''>All Rating</option>
-            <option value='Icon'>Icon</option>
-            <option value='Other Rating'>Other Rating</option>
-          </select>
-        </div>
-      </div>
-
-      <div className='flex flex-col mt-40 w-[40%]'>
-        <h2 className='font-bold text-center mb-4'>Teams:</h2>
-        <table className='w-full border-collapse border border-black'>
-          <thead>
-            <tr>
-              <th className='w-32 border border-black px-4 py-2'>Team Name</th>
-              <th className='w-32 border border-black px-4 py-2'>Manager</th>
-              <th className='w-32 border border-black px-4 py-2'>Available Coin</th>
-              <th className='w-32 border border-black px-4 py-2'>Max Bid</th>
-            </tr>
-          </thead>
-          <tbody>
-            {teamData
-              .filter((team:any) => selectedGender === '' || team.teamGender === selectedGender)
-              .map((team:any) => (
-                <tr key={team.id}>
-                  <td className='border border-black px-4 py-2'>
-                    <button
-                      onClick={() => handleTeamClick(team.id)}
-                      className='bg-blue-500 text-white w-24 px-2 py-1 rounded hover:bg-blue-600'
-                    >
-                      {team.teamName}
-                    </button>
-                  </td>
-                  <td className='border border-black px-4 py-2'>{team.teamManager}</td>
-                  <td className='border border-black px-4 py-2'>{team.teamAmount}</td>
-                  <td className='border border-black px-4 py-2'>{team.maxBid}</td>
-                </tr>
-              ))}
-          </tbody>
-        </table>
-        <div className='w-full'>
-          <button
-            className='px-4 py-2 w-full mt-4 bg-red-500 text-white hover:bg-red-600 rounded-[30px]'
-            onClick={handlePass}
-          >
-            Pass
-          </button>
-        </div>
-      </div>
-
-      {showBidModal && (
-        <div className='fixed inset-0 flex items-center justify-center z-50'>
-          <div className='modal-overlay absolute inset-0 bg-black opacity-50'></div>
-          <div className='modal-container bg-white w-96 mx-auto rounded shadow-lg z-50'>
-            <div className='modal-content p-4'>
-              <h2 className='text-xl mb-4'>
-                <span className='font-bold'>{selectedTeam && selectedTeam.teamName}</span> has placed the winning bid for player{' '}
-                <span className='font-bold'>{selectedPlayer && selectedPlayer.name}</span>
-              </h2>
-              <input
-                type='number'
-                className='w-full p-2 border rounded mb-4'
-                placeholder='Bid Amount'
-                value={bidAmount}
-                onChange={(e) => setBidAmount(e.target.value)}
+    <>
+    {/* <div>
+      {selectedPlayer &&(
+        <>
+        {selectedPlayer.startingBid}
+        </>
+      )}
+    </div> */}
+      <div className='max-w-[1440px] w-screen flex sm:mx-auto mx-10'>
+        <div className='w-[60%] h-screen flex flex-col mt-40 items-center'>
+          <div className='w-[800px]'>
+            <select
+              value={selectedGender}
+              onChange={(e) => setSelectedGender(e.target.value)}
+              className='mb-6 h-7 text-lg shadow-xl bg-[#4f6d79] text-white font-bold w-full text-center rounded-[20px]'
+            >
+              <option value=''>All Genders</option>
+              <option value='Male'>Male</option>
+              <option value='Female'>Female</option>
+            </select>
+          </div>
+          {selectedPlayer && (
+            <>
+              <PlayerCard
+                name={selectedPlayer.name}
+                url={selectedPlayer.image}
+                position={selectedPlayer.position}
+                rating={selectedPlayer.rating}
+                department={selectedPlayer.department}
               />
-              <div className='flex justify-end'>
-                <button
-                  className='px-4 py-2 bg-blue-500 text-white rounded hover-bg-blue-600 mr-2'
-                  onClick={() => handleBidSubmission(bidAmount)}
-                >
-                  Submit Bid
-                </button>
-                <button
-                  className='px-4 py-2 bg-gray-300 text-gray-700 rounded hover-bg-gray-400'
-                  onClick={() => setShowBidModal(false)}
-                >
-                  Cancel
+            </>
+          )}
+          <div className='w-[800px] '>
+            <select
+              value={selectedRating}
+              onChange={handleRatingChange}
+              className='mt-6 mb-6 h-7 text-lg shadow-xl bg-[#4f6d79] text-white font-bold w-full text-center rounded-[20px]'
+            >
+              <option value=''>All Rating</option>
+              <option value='Icon'>Icon</option>
+              <option value='A'>A</option>
+              <option value='B'>B</option>
+              <option value='C'>C</option>
+            </select>
+          </div>
+        </div>
+
+        <div className='flex flex-col mt-40 w-[40%]'>
+          <h2 className='font-bold text-center mb-4'>Teams:</h2>
+          <table className='w-full border-collapse border border-black'>
+            <thead>
+              <tr>
+                <th className='w-32 border border-black px-4 py-2'>Team Name</th>
+                <th className='w-32 border border-black px-4 py-2'>Manager</th>
+                <th className='w-32 border border-black px-4 py-2'>Available Coin</th>
+                <th className='w-32 border border-black px-4 py-2'>Max Bid</th>
+              </tr>
+            </thead>
+            <tbody>
+              {teamData
+                .filter((team:any) => selectedGender === '' || team.teamGender === selectedGender)
+                .map((team:any) => (
+                  <tr key={team.id}>
+                    <td className='border border-black px-4 py-2'>
+                      <button
+                        onClick={() => handleTeamClick(team.id)}
+                        className='bg-blue-500 text-white w-24 px-2 py-1 rounded hover:bg-blue-600'
+                      >
+                        {team.teamName}
+                      </button>
+                    </td>
+                    <td className='border border-black px-4 py-2'>{team.teamManager}</td>
+                    <td className='border border-black px-4 py-2'>{team.teamAmount}</td>
+                    <td className='border border-black px-4 py-2'>{team.maxBid}</td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+          <div className='w-full'>
+            <button
+              className='px-4 py-2 w-full mt-4 bg-red-500 text-white hover:bg-red-600 rounded-[30px]'
+              onClick={handlePass}
+            >
+              Pass
+            </button>
+          </div>
+        </div>
+
+        {showBidModal && (
+          <div className='fixed inset-0 flex items-center justify-center z-50'>
+            <div className='modal-overlay absolute inset-0 bg-black opacity-50'></div>
+            <div className='modal-container bg-white w-96 mx-auto rounded shadow-lg z-50'>
+              <div className='modal-content p-4'>
+                <h2 className='text-xl mb-4'>
+                  <span className='font-bold'>{selectedTeam && selectedTeam.teamName}</span> has placed the winning bid for player{' '}
+                  <span className='font-bold'>{selectedPlayer && selectedPlayer.name}</span>
+                </h2>
+                <input
+                  type='number'
+                  className='w-full p-2 border rounded mb-4'
+                  placeholder='Bid Amount'
+                  value={bidAmount}
+                  onChange={(e) => setBidAmount(e.target.value)}
+                />
+                <div className='flex justify-end'>
+                  <button
+                    className='px-4 py-2 bg-blue-500 text-white rounded hover-bg-blue-600 mr-2'
+                    onClick={() => handleBidSubmission(bidAmount)}
+                  >
+                    Submit Bid
+                  </button>
+                  <button
+                    className='px-4 py-2 bg-gray-300 text-gray-700 rounded hover-bg-gray-400'
+                    onClick={() => setShowBidModal(false)}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        {showSuccessModal && (
+          <div className='fixed inset-0 flex items-center justify-center z-50'>
+            <div className='modal-overlay absolute inset-0 bg-black opacity-50'></div>
+
+            <div className='modal-container bg-white w-96 mx-auto rounded shadow-lg z-50'>
+              <div className='modal-content p-4'>
+                <h2 className='text-xl font-bold mb-2'>Successful Bid</h2>
+                <p className='mb-4'>
+                  Congratulations <span className='font-bold'>{selectedTeam && selectedTeam.teamName}</span> on buying{' '}
+                  <span className='font-bold'>{selectedPlayer && selectedPlayer.name}</span>.
+                </p>
+                <button className='px-4 py-2 bg-blue-500 text-white rounded hover-bg-blue-600' onClick={handleClose}>
+                  Close
                 </button>
               </div>
             </div>
           </div>
-        </div>
-      )}
-      {showSuccessModal && (
-        <div className='fixed inset-0 flex items-center justify-center z-50'>
-          <div className='modal-overlay absolute inset-0 bg-black opacity-50'></div>
+        )}
+        {showUnsuccessModal && (
+          <div className='fixed inset-0 flex items-center justify-center z-50'>
+            <div className='modal-overlay absolute inset-0 bg-black opacity-50'></div>
 
-          <div className='modal-container bg-white w-96 mx-auto rounded shadow-lg z-50'>
-            <div className='modal-content p-4'>
-              <h2 className='text-xl font-bold mb-2'>Successful Bid</h2>
-              <p className='mb-4'>
-                Congratulations <span className='font-bold'>{selectedTeam && selectedTeam.teamName}</span> on buying{' '}
-                <span className='font-bold'>{selectedPlayer && selectedPlayer.name}</span>.
-              </p>
-              <button className='px-4 py-2 bg-blue-500 text-white rounded hover-bg-blue-600' onClick={handleClose}>
-                Close
-              </button>
+            <div className='modal-container bg-white w-96 mx-auto rounded shadow-lg z-50'>
+              <div className='modal-content p-4'>
+                <h2 className='text-xl font-bold mb-2'>Unsuccessful Bid</h2>
+                <p className='mb-4 text-red-600'>
+                  Sorry <span className='font-bold'>{selectedTeam && selectedTeam.teamName}</span> does not have enough coins for buying{' '}
+                  <span className='font-bold'>{selectedPlayer && selectedPlayer.name}</span>.
+                </p>
+                <button
+                  className='px-4 py-2 bg-blue-500 text-white rounded hover-bg-blue-600'
+                  onClick={() => setShowUnsuccessModal(false)}
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
-      {showUnsuccessModal && (
-        <div className='fixed inset-0 flex items-center justify-center z-50'>
-          <div className='modal-overlay absolute inset-0 bg-black opacity-50'></div>
-
-          <div className='modal-container bg-white w-96 mx-auto rounded shadow-lg z-50'>
-            <div className='modal-content p-4'>
-              <h2 className='text-xl font-bold mb-2'>Unsuccessful Bid</h2>
-              <p className='mb-4 text-red-600'>
-                Sorry <span className='font-bold'>{selectedTeam && selectedTeam.teamName}</span> does not have enough coins for buying{' '}
-                <span className='font-bold'>{selectedPlayer && selectedPlayer.name}</span>.
-              </p>
-              <button
-                className='px-4 py-2 bg-blue-500 text-white rounded hover-bg-blue-600'
-                onClick={() => setShowUnsuccessModal(false)}
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    </>
   );
 };
