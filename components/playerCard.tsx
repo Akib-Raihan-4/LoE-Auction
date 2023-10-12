@@ -31,7 +31,7 @@ export const PlayerCard = ({ name, url, position, rating, department }: any) => 
           <Image src="/playerCardPNG.png" width={800} height={100} priority alt="" className='w-[800px] z-10 rounded-tr-[60px] rounded-bl-[60px]' />
           <h1
             ref={nameRef}
-            className='absolute bottom-[230px] text-white font-extrabold text-2xl'
+            className='absolute bottom-[220px] text-white font-extrabold text-2xl'
             style={{ left: bottomPosition }}
           >
             {name}
@@ -44,15 +44,15 @@ export const PlayerCard = ({ name, url, position, rating, department }: any) => 
           </h1>
         </div>
         <div>
-          <h1 className='absolute top-[250px] left-[55px] text-white font-extrabold text-2xl'>
+          <h1 className='absolute top-[250px] left-[45px] text-white font-extrabold text-2xl'>
             Position: {position === 'Goal Keeper' ? 'GK' : position}
             {/* left-[110px] */}
           </h1>
-          <h1 className='absolute top-[350px] left-[55px] text-white font-extrabold text-2xl'>
+          <h1 className='absolute top-[350px] left-[45px] text-white font-extrabold text-2xl'>
             Category: {rating}
             {/* left-[150px] */}
           </h1>
-          <h1 className='absolute top-[450px] left-[55px] text-white font-extrabold text-2xl'>
+          <h1 className='absolute top-[450px] left-[45px] text-white font-extrabold text-2xl'>
             Department: {department}
             {/* left-[130px] */}
           </h1>

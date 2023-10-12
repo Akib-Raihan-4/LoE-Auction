@@ -3,6 +3,59 @@ import React, { useState, useEffect } from 'react';
 import supabase from '@/config/supabase';
 import { PlayerCard } from '@/components/playerCard';
 
+const calculatePlayerCounts = async (teamId:any) => {
+  const { data: teamPlayers, error: teamPlayersError } = await supabase
+    .from('TeamPlayer')
+    .select('playerID, playerPrice')
+    .eq('teamID', teamId);
+
+  console.log(teamPlayers)
+  if (teamPlayersError) {
+    console.error(teamPlayersError);
+    return {
+      Icon: 0,
+      A: 0,
+      B: 0,
+      C: 0,
+    };
+  }
+
+
+  const counts = {
+    Icon: 0,
+    A: 0,
+    B: 0,
+    C: 0,
+  };
+
+  for (const teamPlayer of teamPlayers) {
+  
+    const { data: playerData, error: playerError } = await supabase
+      .from('formPlayer')
+      .select('rating')
+      .eq('id', teamPlayer.playerID)
+      .single();
+
+    if (playerError) {
+      console.error(playerError);
+      continue; 
+    }
+
+   
+    if (playerData.rating === 'Icon') {
+      counts.Icon++;
+    } else if (playerData.rating === 'A') {
+      counts.A++;
+    } else if (playerData.rating === 'B') {
+      counts.B++;
+    } else if (playerData.rating === 'C') {
+      counts.C++;
+    }
+  }
+
+  return counts;
+};
+
 export const Auction = () => {
   const [playerData, setPlayerData] = useState<any>([]);
   const [selectedRating, setSelectedRating] = useState<any>('');
@@ -14,6 +67,7 @@ export const Auction = () => {
   const [teamData, setTeamData] = useState<any>([]);
   const [changes, setChanges] = useState<any>(null);
   // const [selectedPlayerIndex, setSelectedPlayerIndex] = useState<any>(null);
+  const [teamPlayerCounts, setTeamPlayerCounts] = useState<any>({});
 
   const [selectedTeamId, setSelectedTeamId] = useState<any>(null);
   const [selectedTeam, setSelectedTeam] = useState<any>(null);
@@ -25,17 +79,33 @@ export const Auction = () => {
         .from('formPlayer')
         .select('*')
         .eq('verified', true)
-        .eq('selected', false);
-
+        .eq('selected', false)
+        .eq('gender', 'Male');
+  
       if (playersError) {
         console.error(playersError);
       } else {
         setPlayerData(playersData || []);
       }
     };
-
+  
     fetchPlayerData();
   }, [changes]);
+
+  useEffect(() => {
+    const fetchPlayerCounts = async () => {
+      const playerCounts:any = {};
+
+      for (const team of teamData) {
+        const counts = await calculatePlayerCounts(team.id);
+        playerCounts[team.id] = counts;
+      }
+
+      setTeamPlayerCounts(playerCounts);
+    };
+
+    fetchPlayerCounts();
+  },[changes]);
 
   useEffect(() => {
     const fetchTeamData = async () => {
@@ -43,7 +113,7 @@ export const Auction = () => {
         const { data: teamsData, error: teamsError } = await supabase
           .from('Team')
           .select('*')
-          .order('id', { ascending: true }); // Sort by team.id in ascending order
+          .order('id', { ascending: true }); 
     
         if (teamsError) {
           console.error(teamsError);
@@ -119,32 +189,61 @@ export const Auction = () => {
     
         let remainingBudget = team.teamAmount - bidAmount;
 
-        
-    
-        if (playerRatings['A'] === 0 && selectedPlayer.rating !== 'A') {
-          remainingBudget -= bidValues['A'];
-        }
-        
+        let minReq = 1700
 
-        if (playerRatings['B'] === 0 && selectedPlayer.rating !== 'B') {
-          remainingBudget -= bidValues['B'];
-        }
-        
+        let countA = playerRatings['A']
+        let countB = playerRatings['B']
+        let countC = playerRatings['C']
 
-        if (playerRatings['C'] === 0 && selectedPlayer.rating !== 'C') {
-          remainingBudget -= 4 * bidValues['C'];
+        let current = selectedPlayer.rating
+
+        let extraCount = 0
+
+
+        if (countA > 0) {
+          minReq -= 600;
+          extraCount += countA - 1;
         }
-        if (playerRatings['C'] === 1 && selectedPlayer.rating !== 'C') {
-          remainingBudget -= 3 * bidValues['C'];
+        if (countB > 0) {
+          minReq -= 300;
+          extraCount += countB - 1;
         }
-        if (playerRatings['C'] === 2 && selectedPlayer.rating !== 'C') {
-          remainingBudget -= 2 * bidValues['C'];
+        if (countC > 0) {
+          minReq -= 200;
+          extraCount += countC - 1;
         }
-        if (playerRatings['C'] === 3 && selectedPlayer.rating !== 'C') {
-          remainingBudget -= 1 * bidValues['C'];
+        minReq -= extraCount * 200;
+
+        if (current === 'A' && countA === 0) {
+          minReq = minReq - 600;
+        } else if (current === 'A' && countA > 0) {
+            minReq = minReq - 200;
+        }
+
+        if (current === 'B' && countB === 0) {
+          minReq = minReq - 300;
+        } else if (current === 'B' && countB > 0) {
+            minReq = minReq - 200;
+        }
+
+        if (current === 'C' && countC === 0) {
+          minReq = minReq - 200;
+        } else if (current === 'C' && countC > 0) {
+            minReq = minReq - 200;
+        }
+
+        let playerCount = countA + countB + countC + 1;
+        let maxBid = remainingBudget - minReq
+
+        if(remainingBudget === 0){
+          maxBid = 0
+        }
+
+        if(playerCount === 6){
+          maxBid = remainingBudget
         }
     
-        await supabase.from('Team').update({ maxBid: remainingBudget }).eq('id', teamID);
+        await supabase.from('Team').update({ maxBid: maxBid }).eq('id', teamID);
       }
     }
   };
@@ -338,28 +437,16 @@ export const Auction = () => {
 
   return (
     <>
-    <div className='max-w-[1440px] mx-auto'>
-      {selectedPlayer &&(
-        <h1 className='text-center pt-20 text-6xl font-extrabold'>
-        Starting Bid: <span className='text-[#17273e]'>{selectedPlayer.startingBid} LP</span>
-        </h1>
-      )}
-    </div>
-      <div className='max-w-[1440px] w-screen flex gap-10 sm:mx-auto mx-10'>
-        <div className='w-[60%] h-screen flex flex-col mt-20 items-center'>
-          <div className='w-[800px]'>
-            <select
-              value={selectedGender}
-              onChange={(e) => setSelectedGender(e.target.value)}
-              className='mb-6 h-7 text-lg shadow-xl bg-[#4f6d79] text-white font-bold w-full text-center rounded-[20px]'
-            >
-              <option value=''>All Genders</option>
-              <option value='Male'>Male</option>
-              <option value='Female'>Female</option>
-            </select>
-          </div>
+      <div className='max-w-[1440px] mx-auto'>
+            {selectedPlayer &&(
+              <h1 className='text-center pt-20 text-6xl font-extrabold'>
+              Starting Bid: <span className='text-[#17273e]'>{selectedPlayer.startingBid} LP</span>
+              </h1>
+            )}
+          <div className='max-w-[768px] mx-auto'>
+        <div className='w-full'>
           {selectedPlayer && (
-            <>
+            <div className='mt-10'>
               <PlayerCard
                 name={selectedPlayer.name}
                 url={selectedPlayer.image}
@@ -367,13 +454,14 @@ export const Auction = () => {
                 rating={selectedPlayer.rating}
                 department={selectedPlayer.department}
               />
-            </>
+            </div>
           )}
-          <div className='w-[800px] '>
+
+          <div className='w-full'>
             <select
               value={selectedRating}
               onChange={handleRatingChange}
-              className='mt-6 mb-6 h-7 text-lg shadow-xl bg-[#4f6d79] text-white font-bold w-full text-center rounded-[20px]'
+              className='mt-10 h-7 text-lg shadow-xl bg-[#4f6d79] text-white font-bold w-full text-center rounded-[20px]'
             >
               <option value=''>All Rating</option>
               <option value='Icon'>Icon</option>
@@ -383,8 +471,31 @@ export const Auction = () => {
             </select>
           </div>
         </div>
+        
+        <div className='w-full mt-10 flex flex-wrap justify-center gap-4'>
+          {teamData
+            .filter((team: any) => selectedGender === '' || team.teamGender === selectedGender)
+            .map((team: any) => (
+              <button
+                key={team.id}
+                onClick={() => handleTeamClick(team.id)}
+                className='bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600'
+              >
+                {team.teamName}
+              </button>
+            ))}
+        </div>
 
-        <div className='flex flex-col mt-20 w-[40%]'>
+        <div className='w-full mt-10 flex justify-center'>
+          <button
+            className='px-10 py-2 bg-red-500 text-white hover:bg-red-600 rounded-[30px]'
+            onClick={handlePass}
+          >
+            Pass
+          </button>
+        </div>
+
+        <div className='w-full mt-20'>
           <h2 className='font-bold text-center mb-4'>Teams:</h2>
           <table className='w-full border-collapse border border-black'>
             <thead>
@@ -393,12 +504,16 @@ export const Auction = () => {
                 <th className='w-32 border border-black px-4 py-2'>Manager</th>
                 <th className='w-32 border border-black px-4 py-2'>Available Coin</th>
                 <th className='w-32 border border-black px-4 py-2'>Max Bid</th>
+                <th className="w-32 border border-black px-4 py-2">Icon</th>
+                <th className="w-32 border border-black px-4 py-2">A</th>
+                <th className="w-32 border border-black px-4 py-2">B</th>
+                <th className="w-32 border border-black px-4 py-2">C</th>
               </tr>
             </thead>
             <tbody>
               {teamData
-                .filter((team:any) => selectedGender === '' || team.teamGender === selectedGender)
-                .map((team:any) => (
+                .filter((team: any) => selectedGender === '' || team.teamGender === selectedGender)
+                .map((team: any) => (
                   <tr key={team.id}>
                     <td className='border border-black px-4 py-2'>
                       <button
@@ -411,19 +526,18 @@ export const Auction = () => {
                     <td className='border border-black px-4 py-2'>{team.teamManager}</td>
                     <td className='border border-black px-4 py-2'>{team.teamAmount}</td>
                     <td className='border border-black px-4 py-2'>{team.maxBid}</td>
+                    <td className="border border-black px-4 py-2">{teamPlayerCounts[team.id]?.Icon}</td>
+                    <td className="border border-black px-4 py-2">{teamPlayerCounts[team.id]?.A}</td>
+                    <td className="border border-black px-4 py-2">{teamPlayerCounts[team.id]?.B}</td>
+                    <td className="border border-black px-4 py-2">{teamPlayerCounts[team.id]?.C}</td>
                   </tr>
                 ))}
             </tbody>
           </table>
-          <div className='w-full'>
-            <button
-              className='px-4 py-2 w-full mt-4 bg-red-500 text-white hover:bg-red-600 rounded-[30px]'
-              onClick={handlePass}
-            >
-              Pass
-            </button>
-          </div>
         </div>
+        
+      </div>
+
 
         {showBidModal && (
           <div className='fixed inset-0 flex items-center justify-center z-50'>
